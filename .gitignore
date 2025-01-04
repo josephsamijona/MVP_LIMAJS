@@ -52,3 +52,7 @@ celerybeat.pid
 .coverage
 coverage.xml
 *.cover
+
+#add data
+
+populate_db.py
