@@ -194,3 +194,5 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
     ),
 }
+
+AUTH_USER_MODEL = 'app.User'  # Remplacez 'app' par le nom de votre application
