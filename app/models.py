@@ -2,34 +2,78 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 
+class NFCCard(models.Model):
+    """
+    Table pour gérer les cartes NFC et leurs types
+    """
+    NFC_TYPES = [
+        ('STUDENT', 'Student'),
+        ('PARENT', 'Parent'),
+        ('EMPLOYEE', 'Employee')
+    ]
+
+    nfc_id = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name="NFC ID"
+    )
+    card_type = models.CharField(
+        max_length=10,
+        choices=NFC_TYPES,
+        verbose_name="Type de carte"
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.nfc_id} - {self.get_card_type_display()}"
+
+    class Meta:
+        verbose_name = "NFC Card"
+        verbose_name_plural = "NFC Cards"
+
+
 class User(AbstractUser):
-    """
-    Extension du modèle User de Django pour inclure les informations spécifiques
-    à notre système
-    """
     USER_TYPES = [
         ('ADMIN', 'Administrator'),
         ('DRIVER', 'Bus Driver'),
         ('PASSENGER', 'Passenger')
     ]
 
+    groups = models.ManyToManyField(
+        'auth.Group',
+        related_name='custom_user_set',
+        blank=True,
+        help_text='The groups this user belongs to.',
+        verbose_name='groups',
+    )
+    
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        related_name='custom_user_set',
+        blank=True,
+        help_text='Specific permissions for this user.',
+        verbose_name='user permissions',
+    )
+
     user_type = models.CharField(
         max_length=10, 
         choices=USER_TYPES,
         default='PASSENGER'
     )
-    nfc_id = models.CharField(
-        max_length=100, 
-        unique=True, 
-        null=True, 
-        blank=True
+    nfc_card = models.ForeignKey(
+        NFCCard,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='users'
     )
     phone_number = models.CharField(
         max_length=15, 
         null=True, 
         blank=True
     )
-    is_active = models.BooleanField(default=True)
 
 class Subscription(models.Model):
     """

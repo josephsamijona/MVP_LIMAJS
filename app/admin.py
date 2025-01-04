@@ -4,22 +4,67 @@ from django.utils.html import format_html
 from django.utils import timezone
 from django.urls import reverse
 from django.utils.safestring import mark_safe
-from .models import User, Subscription, BusSchedule, BusLocation, TravelHistory
+from django.db import models 
+from .models import User, Subscription, BusSchedule, BusLocation, TravelHistory, NFCCard
+
+@admin.register(NFCCard)
+class NFCCardAdmin(admin.ModelAdmin):
+    list_display = ('nfc_id', 'card_type', 'is_active', 'user_count', 'created_at')
+    list_filter = ('card_type', 'is_active', 'created_at')
+    search_fields = ('nfc_id',)
+    date_hierarchy = 'created_at'
+    
+    actions = ['activate_cards', 'deactivate_cards']
+
+    def user_count(self, obj):
+        return obj.users.count()
+    user_count.short_description = "Users Associated"
+
+    def activate_cards(self, request, queryset):
+        queryset.update(is_active=True)
+    activate_cards.short_description = "Activate selected cards"
+
+    def deactivate_cards(self, request, queryset):
+        queryset.update(is_active=False)
+    deactivate_cards.short_description = "Deactivate selected cards"
+
+
+
+
+
+
+
+
+
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
-    list_display = ('username', 'email', 'user_type', 'nfc_id', 'subscription_status', 'is_active')
-    list_filter = ('user_type', 'is_active', 'date_joined')
-    search_fields = ('username', 'email', 'nfc_id', 'phone_number')
+    list_display = ('username', 'email', 'user_type', 'get_nfc_info', 'subscription_status', 'is_active')
+    list_filter = ('user_type', 'is_active', 'date_joined', 'nfc_card__card_type')
+    search_fields = ('username', 'email', 'nfc_card__nfc_id', 'phone_number')
     ordering = ('-date_joined',)
     
     fieldsets = UserAdmin.fieldsets + (
         ('Bus System Information', {
-            'fields': ('user_type', 'nfc_id', 'phone_number')
+            'fields': ('user_type', 'nfc_card', 'phone_number')
         }),
     )
 
     actions = ['activate_users', 'deactivate_users']
+
+    def get_nfc_info(self, obj):
+        if obj.nfc_card:
+            status_color = 'green' if obj.nfc_card.is_active else 'red'
+            status_icon = '✓' if obj.nfc_card.is_active else '✗'
+            return format_html(
+                '<span style="color: {};">{} ({}) {}</span>',
+                status_color,
+                obj.nfc_card.nfc_id,
+                obj.nfc_card.get_card_type_display(),
+                status_icon
+            )
+        return format_html('<span style="color: gray;">No NFC Card</span>')
+    get_nfc_info.short_description = "NFC Card"
 
     def subscription_status(self, obj):
         if obj.user_type != 'PASSENGER':
@@ -29,8 +74,9 @@ class CustomUserAdmin(UserAdmin):
             return format_html('<span style="color: red;">No Active Subscription</span>')
         if subscription.end_date < timezone.now():
             return format_html('<span style="color: orange;">Expired</span>')
-        return format_html('<span style="color: green;">Active until {}</span>', subscription.end_date.strftime('%Y-%m-%d'))
-
+        return format_html('<span style="color: green;">Active until {}</span>', 
+                         subscription.end_date.strftime('%Y-%m-%d'))
+    
     def activate_users(self, request, queryset):
         queryset.update(is_active=True)
     activate_users.short_description = "Activate selected users"
@@ -38,6 +84,22 @@ class CustomUserAdmin(UserAdmin):
     def deactivate_users(self, request, queryset):
         queryset.update(is_active=False)
     deactivate_users.short_description = "Deactivate selected users"
+
+    # Ajout de filtres personnalisés pour NFC
+    def get_list_filter(self, request):
+        list_filter = super().get_list_filter(request)
+        return list_filter + ('nfc_card__is_active', 'nfc_card__card_type')
+
+    # Personnalisation du formulaire pour l'édition
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        if 'nfc_card' in form.base_fields:
+            # Limiter aux cartes NFC actives et non assignées
+            form.base_fields['nfc_card'].queryset = NFCCard.objects.filter(
+                models.Q(is_active=True) & 
+                (models.Q(users=None) | models.Q(users=obj))
+            )
+        return form
 
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
