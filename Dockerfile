@@ -45,9 +45,6 @@ RUN pip install --no-cache-dir -U pip && \
 # Copie du code source
 COPY . .
 
-# Collection des fichiers statiques
-RUN python manage.py collectstatic --noinput
-
 # Port d'exposition
 EXPOSE 8000
 
