@@ -5,7 +5,7 @@ from django.utils import timezone
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.db import models 
-from .models import User, Subscription, BusSchedule, BusLocation, TravelHistory, NFCCard
+from .models import User, Subscription, BusSchedule, BusLocation, TravelHistory, NFCCard, Schedule, Stop, Route, RouteStop
 
 @admin.register(NFCCard)
 class NFCCardAdmin(admin.ModelAdmin):
@@ -186,6 +186,47 @@ class TravelHistoryAdmin(admin.ModelAdmin):
         if request.user.user_type == 'DRIVER' and obj:
             return obj.driver == request.user
         return False
+    
+    
+    
+@admin.register(Stop)
+class StopAdmin(admin.ModelAdmin):
+   list_display = ('name', 'order', 'description')
+   list_editable = ('order',)
+   search_fields = ('name', 'description')
+   ordering = ('order',)
+
+class RouteStopInline(admin.TabularInline):
+   model = RouteStop
+   extra = 1
+   ordering = ('order',)
+
+@admin.register(Route)
+class RouteAdmin(admin.ModelAdmin):
+   list_display = ('name', 'direction', 'start_time', 'end_time', 'display_stops')
+   list_filter = ('direction',)
+   inlines = [RouteStopInline]
+
+   def display_stops(self, obj):
+       return ", ".join([str(stop) for stop in obj.stops.all().order_by('routestop__order')])
+   display_stops.short_description = 'Arrêts'
+
+@admin.register(Schedule)
+class ScheduleAdmin(admin.ModelAdmin):
+   list_display = ('route', 'stop', 'day_of_week', 'departure_time', 'arrival_time', 'is_active')
+   list_filter = ('day_of_week', 'is_active', 'route')
+   search_fields = ('route__name', 'stop__name')
+   date_hierarchy = 'created_at'
+   list_editable = ('is_active',)
+   actions = ['activate_schedules', 'deactivate_schedules']
+
+   def activate_schedules(self, request, queryset):
+       queryset.update(is_active=True)
+   activate_schedules.short_description = "Activer les horaires sélectionnés"
+
+   def deactivate_schedules(self, request, queryset):
+       queryset.update(is_active=False)
+   deactivate_schedules.short_description = "Désactiver les horaires sélectionnés"
 
 # Personnalisation de l'interface d'administration
 admin.site.site_header = "Bus Management System"

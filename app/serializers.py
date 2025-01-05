@@ -33,16 +33,24 @@ class LocationUpdateSerializer(serializers.ModelSerializer):
         
         
         
-class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+class DriverTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
-        user = self.user
-        data['user_type'] = user.user_type
-        data['username'] = user.username
+        if self.user.user_type != 'DRIVER':
+            raise serializers.ValidationError(
+                {'error': 'Seuls les chauffeurs peuvent se connecter à cette application'}
+            )
+        
+        # Ajouter des informations supplémentaires au token
+        data.update({
+            'user_id': self.user.id,
+            'username': self.user.username,
+            'user_type': self.user.user_type,
+        })
         return data
 
-class UserSerializer(serializers.ModelSerializer):
+class DriverSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'user_type', 'nfc_card')
-        read_only_fields = ('id',)
+        fields = ('id', 'username', 'user_type')
+        read_only_fields = fields

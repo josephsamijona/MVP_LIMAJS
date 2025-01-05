@@ -12,11 +12,12 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken,TokenError
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.decorators import permission_classes
 from django.contrib.auth import authenticate
-from app.serializers import UserSerializer, CustomTokenObtainPairSerializer
+from app.serializers import DriverTokenObtainPairSerializer, DriverSerializer
+from app.permissions import IsDriver
 
 
 ###########DRIVER APP###
@@ -59,64 +60,63 @@ class DriverViewSet(viewsets.ViewSet):
         return Response(serializer.data)
     
     
-class CustomTokenObtainPairView(TokenObtainPairView):
-    serializer_class = CustomTokenObtainPairSerializer
+class DriverLoginView(TokenObtainPairView):
+    permission_classes = [AllowAny]
+    serializer_class = DriverTokenObtainPairSerializer
 
-class UserProfileView(APIView):
-    permission_classes = [IsAuthenticated]
-
+class DriverProfileView(views.APIView):
+    permission_classes = [IsAuthenticated, IsDriver]
+    
     def get(self, request):
-        serializer = UserSerializer(request.user)
+        serializer = DriverSerializer(request.user)
         return Response(serializer.data)
 
-@permission_classes([IsAuthenticated])
-class LogoutView(APIView):
+class DriverLogoutView(views.APIView):
+    permission_classes = [IsAuthenticated, IsDriver]
+
     def post(self, request):
         try:
-            # Vous pouvez ajouter ici la logique pour blacklister le token
-            return Response({'message': 'Déconnexion réussie'})
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        
-        
-class LoginView(views.APIView):
-    permission_classes = [AllowAny]
-    
-    def post(self, request):
-        username = request.data.get('username')
-        password = request.data.get('password')
-        
-        if not username or not password:
+            refresh_token = request.data.get('refresh')
+            if refresh_token:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+                return Response(
+                    {'message': 'Déconnexion réussie'}, 
+                    status=status.HTTP_200_OK
+                )
             return Response(
-                {'error': 'Les champs username et password sont requis'}, 
+                {'error': 'Token de rafraîchissement requis'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except TokenError:
+            return Response(
+                {'error': 'Token invalide ou expiré'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {'error': str(e)}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        user = authenticate(username=username, password=password)
-        
-        if user is None:
-            return Response(
-                {'error': 'Identifiants invalides'}, 
-                status=status.HTTP_401_UNAUTHORIZED
-            )
+class DriverTokenRefreshView(views.APIView):
+    permission_classes = [AllowAny]
 
-        if not user.is_active:
-            return Response(
-                {'error': 'Ce compte est désactivé'}, 
-                status=status.HTTP_401_UNAUTHORIZED
-            )
+    def post(self, request):
+        refresh_token = request.data.get('refresh')
+        try:
+            token = RefreshToken(refresh_token)
+            user = User.objects.get(id=token.payload.get('user_id'))
+            
+            if user.user_type != 'DRIVER':
+                raise Exception('Token non valide pour un chauffeur')
 
-        # Générer les tokens
-        refresh = RefreshToken.for_user(user)
-        
-        return Response({
-            'access': str(refresh.access_token),
-            'refresh': str(refresh),
-            'user': {
-                'id': user.id,
-                'username': user.username,
-                'user_type': user.user_type,
-            }
-        })
-        
+            return Response({
+                'access': str(token.access_token),
+            })
+        except Exception as e:
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
 #####################passenger app

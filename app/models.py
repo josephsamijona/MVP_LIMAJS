@@ -1,6 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
+from django.utils.timezone import now
+
 
 class NFCCard(models.Model):
     """
@@ -172,3 +174,69 @@ class TravelHistory(models.Model):
         decimal_places=6,
         null=True
     )
+    
+
+class Stop(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+    order = models.PositiveIntegerField()
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['order']
+
+class Route(models.Model):
+    DIRECTION_CHOICES = [
+        ('ALLER', 'Trajet Aller'),
+        ('RETOUR', 'Trajet Retour')
+    ]
+
+    name = models.CharField(max_length=100)
+    direction = models.CharField(max_length=10, choices=DIRECTION_CHOICES)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    stops = models.ManyToManyField(Stop, through='RouteStop')
+
+    def __str__(self):
+        return f"{self.name} ({self.direction})"
+
+class RouteStop(models.Model):
+    route = models.ForeignKey(Route, on_delete=models.CASCADE)
+    stop = models.ForeignKey(Stop, on_delete=models.CASCADE)
+    order = models.PositiveIntegerField()  # Ordre des arrêts dans ce trajet spécifique
+    estimated_time = models.IntegerField()  # Temps estimé en minutes depuis le début du trajet
+
+    class Meta:
+        ordering = ['order']
+        unique_together = [['route', 'order']]  # Un seul arrêt peut avoir un ordre spécifique dans un trajet
+
+    def __str__(self):
+        return f"{self.route.name} - {self.stop.name} (Stop {self.order})"
+
+class Schedule(models.Model):
+    DAYS_OF_WEEK = [
+        ('MON', 'Lundi'),
+        ('TUE', 'Mardi'),
+        ('WED', 'Mercredi'),
+        ('THU', 'Jeudi'),
+        ('FRI', 'Vendredi'),
+        ('SAT', 'Samedi'),
+        ('SUN', 'Dimanche')
+    ]
+
+    route = models.ForeignKey(Route, on_delete=models.CASCADE)
+    stop = models.ForeignKey(Stop, on_delete=models.CASCADE)
+    departure_time = models.TimeField()
+    arrival_time = models.TimeField()
+    day_of_week = models.CharField(max_length=20, choices=DAYS_OF_WEEK)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Schedule for {self.route.name} - {self.stop.name} at {self.departure_time}"
+
+    class Meta:
+        ordering = ['departure_time']
