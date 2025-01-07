@@ -43,10 +43,12 @@ class DriverViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['post'])
     def update_location(self, request):
+        print("Données reçues:", request.data)  # Pour le debugging
         serializer = LocationUpdateSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(driver=request.user)
             return Response(serializer.data)
+        print("Erreurs de validation:", serializer.errors)  # Pour le debugging
         return Response(serializer.errors, status=400)
 
     @action(detail=False, methods=['get'])
