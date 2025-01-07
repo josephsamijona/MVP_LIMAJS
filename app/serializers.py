@@ -30,7 +30,9 @@ class LocationUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = BusLocation
         fields = ['latitude', 'longitude', 'schedule']
-        
+        extra_kwargs = {
+            'schedule': {'required': False}  # Rend schedule optionnel
+        }
         
         
 class DriverTokenObtainPairSerializer(TokenObtainPairSerializer):
