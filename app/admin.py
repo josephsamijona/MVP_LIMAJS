@@ -145,8 +145,8 @@ class BusScheduleAdmin(admin.ModelAdmin):
 
 @admin.register(BusLocation)
 class BusLocationAdmin(admin.ModelAdmin):
-    list_display = ('driver', 'schedule', 'formatted_location', 'timestamp')
-    list_filter = ('driver', 'timestamp', 'schedule')
+    list_display = ('driver',  'formatted_location', 'timestamp')
+    list_filter = ('driver', 'timestamp')
     date_hierarchy = 'timestamp'
 
     def formatted_location(self, obj):

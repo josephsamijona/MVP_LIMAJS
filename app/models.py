@@ -138,10 +138,7 @@ class BusLocation(models.Model):
         decimal_places=6
     )
     timestamp = models.DateTimeField(auto_now=True)
-    schedule = models.ForeignKey(
-        BusSchedule,
-        on_delete=models.CASCADE
-    )
+
 
 class TravelHistory(models.Model):
     """

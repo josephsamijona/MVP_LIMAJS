@@ -29,11 +29,7 @@ class TravelHistorySerializer(serializers.ModelSerializer):
 class LocationUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = BusLocation
-        fields = ['latitude', 'longitude', 'schedule']
-        extra_kwargs = {
-            'schedule': {'required': False}  # Rend schedule optionnel
-        }
-        
+        fields = ['latitude', 'longitude']
         
 class DriverTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
