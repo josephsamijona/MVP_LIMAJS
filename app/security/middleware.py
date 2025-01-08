@@ -98,7 +98,7 @@ class TrollingSecurityMiddleware:
         
         # 4. Chemins Administratifs
         self.admin_patterns = [
-            'admin', 'administrator', 'admincp', 'adminer',
+            'administrator', 'admincp', 'adminer',
             'moderator', 'webadmin', 'backoffice', 'manager',
             'phpinfo', 'dashboard', 'cms', 'control',
             'panel', 'console', 'sysadmin', 'root',
