@@ -33,14 +33,95 @@ class TrollingSecurityMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
         
+        # Liste des chemins sûrs
+        self.safe_paths = [
+            # Django Admin
+            '/admin/',
+            '/admin/login/',
+            '/admin/logout/',
+            '/admin/password_change/',
+            '/admin/jsi18n/',
+            '/admin/auth/',
+            '/admin/auth/user/',
+            '/admin/auth/group/',
+            
+            # Static et Media
+            '/static/',
+            '/static/admin/',
+            '/static/rest_framework/',
+            '/media/',
+            
+            # API paths - Driver
+            '/api/',
+            '/api/driver/',
+            '/api/driver/login/',
+            '/api/driver/logout/',
+            '/api/driver/profile/',
+            '/api/driver/refresh/',
+            '/api/drivera/login/',
+            '/api/drivera/logout/',
+            '/api/drivera/profile/',
+            '/api/drivera/refresh/',
+
+            # API Authentication
+            '/api/token/',
+            '/api/token/refresh/',
+            '/api/auth/',
+            '/api/auth/login/',
+            '/api/auth/logout/',
+            '/api/auth/password/reset/',
+            '/api/auth/password/reset/confirm/',
+
+            # API Documentation
+            '/api/schema/',
+            '/api/docs/',
+            '/api/swagger/',
+            '/api/swagger.json',
+            '/api/swagger.yaml',
+            '/api/redoc/',
+
+            # Common Files
+            '/favicon.ico',
+            '/robots.txt',
+            '/sitemap.xml',
+            '/manifest.json',
+            '/.well-known/',
+
+            # Debug Toolbar (en développement)
+            '/__debug__/',
+            
+            # Health Checks
+            '/health/',
+            '/health/check/',
+            '/ping/',
+
+            # Common Static Paths
+            '/static/css/',
+            '/static/js/',
+            '/static/img/',
+            '/static/fonts/',
+            '/static/icons/',
+            '/media/uploads/',
+
+            # Django Default Auth
+            '/accounts/login/',
+            '/accounts/logout/',
+            '/accounts/profile/',
+            '/accounts/password_reset/',
+
+            # API Versioning
+            '/api/v1/',
+            '/api/v2/',
+            '/api/latest/',
+        ]
+        
         # URLs de troll
         self.troll_urls = [
             "https://www.youtube.com/watch?v=dQw4w9WgXcQ",  # Rick Roll Classic
-            "https://www.youtube.com/watch?v=L_jWHffIx5E",  # All Star - Smash Mouth
+            "https://www.youtube.com/watch?v=L_jWHffIx5E",  # All Star
             "https://www.youtube.com/watch?v=9bZkp7q19f0",  # Gangnam Style
             "https://www.youtube.com/watch?v=y6120QOlsfU",  # Sandstorm
-            "https://www.youtube.com/watch?v=ZZ5LpwO-An4",  # HEYYEYAAEYAAAEYAEYAA
-            "https://www.youtube.com/watch?v=G1IbRujko-A",  # Nyan Cat
+            "https://www.youtube.com/watch?v=ZZ5LpwO-An4",  # HEYYEYAA
         ]
 
         # Messages humoristiques
@@ -54,138 +135,129 @@ class TrollingSecurityMiddleware:
             "sudo apt-get install better-hacking-skills 📚",
             "pip install try-harder 😉",
             "npm install --save hack-prevention (100% de dépendances sécurisées) 🛡️",
-            "git commit -m 'Nice try, better luck next time' 🎮",
-            "Error 500: Server too busy playing Minecraft 🎲",
-            "Firewall.exe has stopped working... JK, got you! 🎯",
-            "Loading counter_hack.dll... Hacker neutralized! 🎳",
-            "Sorry, our server is too busy watching cat videos 🐱",
-            "Task failed successfully! Try again never 🎪",
         ]
 
-        # 1. Patterns WordPress et CMS
-        self.wordpress_patterns = [
-            'wp-admin', 'wp-content', 'wp-includes',
-            'xmlrpc.php', 'wp-login', 'wp-config',
-            'wlwmanifest', 'wp-json', 'wp-cron',
-            'wp-mail', 'wp-links', 'wp-load',
-            'joomla', 'drupal', 'magento',
-            'wordpress', 'wp-plugins', 'wp-themes',
-        ]
-        
-        # 2. Fichiers de Configuration Sensibles
-        self.config_patterns = [
-            'config.php', 'configuration.php', 'settings.php',
-            'setup.php', 'install.php', 'admin.php',
-            'administrator', 'admincp', 'cpanel',
-            'phpmyadmin', 'myadmin', 'mysql',
-            'database.php', 'db.php', 'sql.php',
-            '.env', '.git', '.htaccess', '.ssh',
-            'config.js', 'settings.js', 'web.config',
-            'credentials', 'secret', 'password',
-            'deploy', 'backup', '.svn', '.hg',
-        ]
-        
-        # 3. Extensions Sensibles
-        self.extension_patterns = [
-            '.php', '.asp', '.aspx', '.jsp', '.jspx',
-            '.swp', '.swf', '.git', '.svn', '.hg',
-            '.env', '.htaccess', '.htpasswd', '.user.ini',
-            '.sql', '.bak', '.backup', '.old', '.temp',
-            '.txt', '.log', '.conf', '.config', '.ini',
-            '.dll', '.exe', '.sh', '.bash', '.py',
-            '.pl', '.cgi', '.cfm', '.log', '.bak',
-        ]
-        
-        # 4. Chemins Administratifs
-        self.admin_patterns = [
-            'admin', 'administrator', 'admincp', 'adminer',
-            'moderator', 'webadmin', 'backoffice', 'manager',
-            'phpinfo', 'dashboard', 'cms', 'control',
-            'panel', 'console', 'sysadmin', 'root',
-            'supervisor', 'manager', 'manage', 'administration',
-            'backend', 'private', 'secret', 'restricted',
-            'signin', 'setup', 'install',
-        ]
-        
-        # 5. Patterns d'Attaque Standards
-        self.attack_patterns = [
-            'shell', 'backdoor', 'malware', 'exploit',
-            'hack', 'passwd', 'password', 'admin',
-            'setup', 'webhook', 'backup', 'install',
-            'upgrade', 'update', 'debug', 'trace',
-            'eval', 'exec', 'system', 'cmd',
-            'command', 'execute', 'ping', 'nmap',
-        ]
+        # Patterns malveillants
+        self.malicious_patterns = {
+            # Remote File Inclusion et LFI
+            'file_inclusion': [
+                '../', '..%2f', '..\%u2216', '..\\', '..//',
+                'file://', 'http://', 'ftp://', 'php://',
+                '/etc/passwd', '/etc/shadow', '/etc/hosts',
+                'C:\\Windows\\', 'C:\\Program Files\\',
+                '/proc/self/', '/proc/version', '/proc/cpuinfo',
+                '.htaccess', '.htpasswd', 'web.config',
+                'wp-config.php', 'config.inc.php',
+            ],
 
-        # 6. Patterns SQL Injection
-        self.sql_injection_patterns = [
-            'union select', 'information_schema', 
-            'sysdatabases', 'sysusers', 'sys.users',
-            'concat(', 'group_concat', 'load_file',
-            'benchmark(', 'sleep(', 'delay',
-            'order by', 'group by', 'having',
-            'waitfor delay', 'varchar(', 'cast(',
-            'declare', 'drop table', 'truncate',
-            'delete from', 'insert into', 'select from',
-        ]
+            # Injections SQL avancées
+            'sql_injection': [
+                'union select', 'information_schema', 
+                'sysdatabases', 'sysusers', 'sys.users',
+                'version()', 'database()', 'schema()',
+                'user()', 'system_user()', 'session_user()',
+                'SELECT @@', 'SHOW DATABASES', 'SHOW TABLES',
+                'INTO OUTFILE', 'INTO DUMPFILE',
+                'UNION ALL SELECT', 'UNION SELECT',
+                'HAVING 1=1', 'HAVING 1=0',
+                'CASE WHEN', 'IF(1=1', 'SLEEP(',
+                'WAITFOR DELAY', 'BENCHMARK(',
+                'concat(', 'group_concat', 'load_file',
+                'benchmark(', 'sleep(', 'delay',
+                'order by', 'group by', 'having',
+                'waitfor delay', 'varchar(', 'cast(',
+                'declare', 'drop table', 'truncate',
+                'delete from', 'insert into', 'select from',
+            ],
 
-        # 7. Patterns XSS
-        self.xss_patterns = [
-            '<script', 'javascript:', 'vbscript:',
-            'onload=', 'onerror=', 'onclick=',
-            'onmouseover=', 'onfocus=', 'onblur=',
-            'alert(', 'console.log(', 'eval(',
-            'document.cookie', 'document.write',
-            'innerHTML', 'outerHTML', 'href=javascript',
-        ]
+            # XSS Patterns
+            'xss': [
+                '<script', 'javascript:', 'vbscript:',
+                'onload=', 'onerror=', 'onclick=',
+                'onmouseover=', 'onfocus=', 'onblur=',
+                'alert(', 'console.log(', 'eval(',
+                'document.cookie', 'document.write',
+                'innerHTML', 'outerHTML', 'href=javascript',
+            ],
 
-        # 8. Patterns Shell et Command Injection
-        self.shell_patterns = [
-            ';', '&&', '||', '|', '`',
-            '$(',  '${', 'sudo', 'chmod',
-            'chown', 'rm -rf', 'mv', 'cp',
-            'cat', 'echo', 'wget', 'curl',
-            'bash', 'sh', 'python', 'perl',
-        ]
+            # Webshells
+            'webshell': [
+                'c99.php', 'r57.php', 'cmd.php', 'shell.php',
+                'b374k', 'weevely', 'chinese.php', 'phpspy',
+                'wso.php', 'dq.php', 'az.php', 'bash.php',
+                'system.php', 'cmd.asp', 'cmd.jsp',
+                'syscmd.php', 'b374k.php', 'alfa.php',
+            ],
 
-        # 9. File Inclusion Patterns
-        self.file_inclusion_patterns = [
-            '../', '..%2f', '%2e%2e%2f',
-            'file://', 'input://', 'data://',
-            'php://', 'zip://', 'phar://',
-            'expect://', 'glob://', 'compress.zlib://',
-        ]
+            # Shell et Command Injection
+            'shell': [
+                ';', '&&', '||', '|', '`',
+                '$(',  '${', 'sudo', 'chmod',
+                'chown', 'rm -rf', 'mv', 'cp',
+                'cat', 'echo', 'wget', 'curl',
+                'bash', 'sh', 'python', 'perl',
+            ],
 
-        # 10. Scan et Enumeration Patterns
-        self.scan_patterns = [
-            'scanner', 'nikto', 'nmap',
-            'wpscan', 'sqlmap', 'dirbuster',
-            'gobuster', 'burp', 'acunetix',
-            'nessus', 'whatweb', 'reconnaissance',
-            'enum', 'hydra', 'brutus',
-        ]
+            # Tentatives de Contournement
+            'bypass_attempts': [
+                '%00', '%0d%0a', '%0a', '%0d',
+                '%252f', '%25252f', '%2e%2e%2f',
+                'data:text/html', 'data:application/x-httpd',
+                'base64,', 'php://input', 'zip://', 'phar://',
+                'expect://', 'php://filter',
+                'convert.base64-encode',
+            ],
+
+            # Fichiers Sensibles
+            'sensitive_files': [
+                'composer.json', 'package.json', 'yarn.lock',
+                'Gemfile', 'requirements.txt', 'Pipfile',
+                '.npmrc', '.yarnrc', '.env.example',
+                'docker-compose.yml', 'Dockerfile',
+                '.dockerignore', '.gitignore',
+                'phpinfo.php', 'info.php', 'test.php',
+                '.svn/', '.git/', '.hg/',
+                '.env', '.git', '.htaccess', '.ssh',
+                'config.js', 'settings.js', 'web.config',
+                'credentials', 'secret', 'password',
+                'deploy', 'backup', '.svn', '.hg',
+            ],
+
+            # Scan et Enumération
+            'scanners': [
+                'scanner', 'nikto', 'nmap', 'nuclei', 'zap', 
+                'arachni', 'w3af', 'wpscan', 'sqlmap', 
+                'dirbuster', 'gobuster', 'burp', 'acunetix',
+                'nessus', 'whatweb', 'reconnaissance',
+                'enum', 'hydra', 'brutus', 'skipfish', 
+                'wapiti', 'whatweb', 'xspider', 'websecurify',
+                'vega', 'owasp', 'metasploit',
+            ],
+
+            # Extensions Dangereuses
+            'dangerous_extensions': [
+                '.php', '.phtml', '.php3', '.php4', '.php5',
+                '.asp', '.aspx', '.asa', '.cer', '.asax',
+                '.jsp', '.jspx', '.jsw', '.jsv', '.jspf',
+                '.exe', '.dll', '.so', '.sh', '.bat',
+                '.cmd', '.pl', '.cgi', '.386', '.scr',
+                '.msi', '.jar', '.py', '.rb', '.war',
+            ],
+        }
 
         # Combiner tous les patterns
-        self.all_patterns = (
-            self.wordpress_patterns +
-            self.config_patterns +
-            self.extension_patterns +
-            self.admin_patterns +
-            self.attack_patterns +
-            self.sql_injection_patterns +
-            self.xss_patterns +
-            self.shell_patterns +
-            self.file_inclusion_patterns +
-            self.scan_patterns
-        )
+        self.all_patterns = []
+        for pattern_list in self.malicious_patterns.values():
+            self.all_patterns.extend(pattern_list)
 
         # Configuration du tracking
         self.attempt_tracker = {}
         self.max_attempts = 5
-        self.block_duration = 3600  # 1 heure
+        self.block_duration = 1800  # 30 minutes
         self.blocked_ips = {}
         self.suspicious_ips = {}
         self.last_cleanup = datetime.now().timestamp()
+        self.suspicious_threshold = 5
         
     def get_client_ip(self, request):
         """Obtient l'IP réelle du client en tenant compte des proxies"""
@@ -196,132 +268,95 @@ class TrollingSecurityMiddleware:
             ip = request.META.get('REMOTE_ADDR')
         return ip
 
-    def clean_old_records(self):
-        """Nettoie périodiquement les enregistrements"""
-        current_time = datetime.now().timestamp()
-        
-        # Nettoyage toutes les 6 heures
-        if current_time - self.last_cleanup > 21600:
-            expired_ips = [
-                ip for ip, block_time in self.blocked_ips.items() 
-                if current_time > block_time
-            ]
-            for ip in expired_ips:
-                del self.blocked_ips[ip]
-                logger.info(f"🧹 Déblocage automatique de l'IP: {ip}")
-
-            self.attempt_tracker = {
-                ip: count for ip, count in self.attempt_tracker.items()
-                if ip not in expired_ips
-            }
-            
-            self.suspicious_ips = {
-                ip: data for ip, data in self.suspicious_ips.items()
-                if current_time - data['last_seen'] < 86400  # 24 heures
-            }
-            
-            self.last_cleanup = current_time
+    def is_path_safe(self, path):
+        """Vérifie si le chemin est dans la liste des chemins sûrs"""
+        normalized_path = '/' + path.lstrip('/')
+        return any(normalized_path.startswith(safe_path) for safe_path in self.safe_paths)
 
     def is_path_suspicious(self, path):
         """Vérifie si le chemin contient des patterns suspects"""
+        if self.is_path_safe(path):
+            return False
+            
         path_lower = path.lower()
         
-        # Vérification basique des patterns
-        if any(pattern in path_lower for pattern in self.all_patterns):
-            return True
+        # Vérification par catégorie de pattern malveillant
+        for category, patterns in self.malicious_patterns.items():
+            if any(pattern in path_lower for pattern in patterns):
+                logger.warning(f"Pattern malveillant détecté [{category}]: {path}")
+                return True
             
         # Vérification des caractères suspects
         suspicious_chars = re.compile(r'[<>\'"]|\.\.|%00|\\x|\\u')
         if suspicious_chars.search(path):
+            logger.warning(f"Caractères suspects détectés: {path}")
             return True
             
         # Vérification de la longueur excessive
         if len(path) > 255:
+            logger.warning(f"Chemin trop long: {len(path)} caractères")
             return True
             
         return False
 
+    def analyze_request(self, request):
+        """Analyse approfondie de la requête"""
+        if self.is_path_safe(request.path):
+            return 0, []
+
+        suspicious_score = 0
+        reasons = []
+
+        # Vérification du User-Agent
+        user_agent = request.META.get('HTTP_USER_AGENT', '')
+        if not user_agent or len(user_agent) < 10:
+            suspicious_score += 1
+            reasons.append("User-Agent suspect")
+
+        # Vérification des requêtes POST
+        if request.method == 'POST':
+            post_data = str(request.POST)
+            for category, patterns in self.malicious_patterns.items():
+                if any(pattern in post_data.lower() for pattern in patterns):
+                    suspicious_score += 2
+                    reasons.append(f"Contenu POST suspect ({category})")
+
+        # Vérification des en-têtes
+        for category, patterns in self.malicious_patterns.items():
+            headers = str(request.headers).lower()
+            if any(pattern in headers for pattern in patterns):
+                suspicious_score += 1
+                reasons.append(f"En-têtes suspects ({category})")
+
+        return suspicious_score, reasons
+
     def get_funny_response(self, attack_type):
         """Génère une réponse humoristique basée sur le type d'attaque"""
         attack_responses = {
-            "WordPress Scan": "WordPress ? Désolé, on utilise Django. Essayez pip install better-scanning 😉",
-            "Configuration Access": "Configurer quoi ? Notre sens de l'humour ? 🤔",
-            "Admin Access": "sudo permission-denied && echo 'Bien essayé!' 🎯",
-            "Direct Attack": "chmod 000 piratage.txt # Accès refusé avec style 😎",
-            "Upload Access": "virus.exe was not uploaded successfully 🦠",
-            "SQL Injection": "DROP TABLE hacker; -- Tentative supprimée 😎",
-            "XSS Attack": "<script>alert('Nice Try!')</script> est bloqué ici 🛡️",
-            "Shell Injection": "rm -rf /hackers_attempt/* 🗑️",
-            "File Inclusion": "Error 404: Inclusion not found 📁",
-            "Scanner Detection": "Nmap ? Plus comme Nope ! 🚫",
+            "file_inclusion": "Les fichiers sont en quarantaine! 🔒",
+            "sql_injection": "DROP TABLE hackers; -- Tentative supprimée 😎",
+            "xss": "<script>alert('Nice Try!')</script> est bloqué ici 🛡️",
+            "webshell": "Shell non disponible, essayez /bin/nope 🐚",
+            "shell": "rm -rf /tentative_hack/* 🗑️",
+            "bypass_attempts": "Contournement ? Plus comme détournement... vers Rick Astley 🎵",
+            "sensitive_files": "Ces fichiers sont partis en vacances ! 🏖️",
+            "scanners": "Scan terminé ! Résultat : Vous êtes bloqué 📊",
+            "dangerous_extensions": "Extension refusée, essayez .nope 🚫",
         }
         return attack_responses.get(attack_type, random.choice(self.funny_messages))
 
     def detect_attack_type(self, path, request_data=None):
-        """Détection améliorée du type d'attaque"""
-        path_lower = path.lower()
+        """Détection du type d'attaque"""
+        data_to_check = (path + str(request_data or '')).lower()
         
-        # Vérification des différents types d'attaques
-        if any(p in path_lower for p in self.wordpress_patterns):
-            return "WordPress Scan"
-        elif any(p in path_lower for p in self.sql_injection_patterns):
-            return "SQL Injection"
-        elif any(p in path_lower for p in self.xss_patterns):
-            return "XSS Attack"
-        elif any(p in path_lower for p in self.shell_patterns):
-            return "Shell Injection"
-        elif any(p in path_lower for p in self.file_inclusion_patterns):
-            return "File Inclusion"
-        elif any(p in path_lower for p in self.scan_patterns):
-            return "Scanner Detection"
-        elif any(p in path_lower for p in self.config_patterns):
-            return "Configuration Access"
-        elif any(p in path_lower for p in self.admin_patterns):
-            return "Admin Access"
-        return "Unknown Attack Pattern"
+        for category, patterns in self.malicious_patterns.items():
+            if any(pattern in data_to_check for pattern in patterns):
+                return category
 
-    def analyze_request(self, request):
-        """Analyse approfondie de la requête"""
-        suspicious_score = 0
-        reasons = []
-
-        # Vérifier le User-Agent
-        user_agent = request.META.get('HTTP_USER_AGENT', '')
-        if not user_agent or len(user_agent) < 10:
-            suspicious_score += 2
-            reasons.append("User-Agent suspect")
-
-        # Vérifier le Referer pour les requêtes non-GET
-        if request.method != 'GET':
-            referer = request.META.get('HTTP_REFERER', '')
-            if referer:
-                parsed_referer = urlparse(referer)
-                if parsed_referer.netloc not in [request.get_host()]:
-                    suspicious_score += 1
-                    reasons.append("Referer suspect")
-
-        # Vérifier les en-têtes courants
-        common_headers = ['Accept', 'Accept-Language', 'Accept-Encoding']
-        missing_headers = sum(1 for header in common_headers if header not in request.META)
-        if missing_headers > 1:
-            suspicious_score += missing_headers
-            reasons.append(f"En-têtes manquants: {missing_headers}")
-
-        # Vérifier les paramètres de requête suspects
-        if request.GET:
-            if any(pattern in str(request.GET).lower() for pattern in self.all_patterns):
-                suspicious_score += 2
-                reasons.append("Paramètres GET suspects")
-
-        if request.POST:
-            if any(pattern in str(request.POST).lower() for pattern in self.all_patterns):
-                suspicious_score += 3
-                reasons.append("Paramètres POST suspects")
-
-        return suspicious_score, reasons
+        return "unknown_attack"
 
     def log_attempt(self, request, ip, attack_type):
-        """Log amélioré avec formatage et emojis"""
+        """Log avec une touche d'humour"""
         log_data = SecurityLogFormatter.format_log_message(
             ip=ip,
             request=request,
@@ -329,56 +364,64 @@ class TrollingSecurityMiddleware:
             attempt_count=self.attempt_tracker.get(ip, 1)
         )
         
-        # Ajout de l'analyse de la requête
+        # Ajout de l'analyse
         suspicious_score, reasons = self.analyze_request(request)
         log_data['🔍 Analyse'] = {
             'score': suspicious_score,
-            'raisons': reasons
+            'raisons': reasons,
+            'type_attaque': attack_type
         }
         
-        # Log au format WARNING avec indentation JSON
         logger.warning(json.dumps(log_data, indent=2, ensure_ascii=False))
-        
-        # Log supplémentaire pour les tentatives multiples
+
+        # Log séparé pour les tentatives multiples
         if self.attempt_tracker.get(ip, 1) > 3:
             logger.error(
                 f"🚨 ALERTE MULTIPLE: {ip} a fait {self.attempt_tracker[ip]} tentatives! "
-                f"Score de suspicion: {suspicious_score}"
+                f"Type: {attack_type}, Score: {suspicious_score}"
             )
 
+    def clean_old_records(self):
+        """Nettoie les anciens enregistrements"""
+        current_time = datetime.now().timestamp()
+        if current_time - self.last_cleanup > 3600:
+            self.blocked_ips = {
+                ip: block_time 
+                for ip, block_time in self.blocked_ips.items() 
+                if current_time < block_time
+            }
+            self.attempt_tracker = {
+                ip: count 
+                for ip, count in self.attempt_tracker.items()
+                if ip in self.blocked_ips
+            }
+            self.last_cleanup = current_time
+            logger.info("🧹 Nettoyage des enregistrements effectué")
+
     def __call__(self, request):
-        # Nettoyage périodique
+        """Fonction principale du middleware"""
         self.clean_old_records()
-        
         ip = self.get_client_ip(request)
-        path = request.path.lstrip('/').lower()
+        path = request.path.lstrip('/')
+
+        # Vérification du chemin sûr
+        if self.is_path_safe(path):
+            return self.get_response(request)
 
         # Vérification du blocage
         if ip in self.blocked_ips:
             if datetime.now().timestamp() < self.blocked_ips[ip]:
-                logger.warning(f"🚫 Tentative d'accès bloquée pour l'IP: {ip}")
                 return HttpResponseForbidden(
                     "🎵 You've been blocked! Time to listen to some music... 🎵"
                 )
             else:
                 del self.blocked_ips[ip]
 
-        # Analyse de la requête
         suspicious_score, reasons = self.analyze_request(request)
         
-        # Vérification du chemin suspect
-        is_suspicious = self.is_path_suspicious(path)
-        
-        if is_suspicious or suspicious_score > 3:
-            attack_type = self.detect_attack_type(path, request.POST or request.GET)
+        if self.is_path_suspicious(path) or suspicious_score >= self.suspicious_threshold:
             self.attempt_tracker[ip] = self.attempt_tracker.get(ip, 0) + 1
-            
-            # Mise à jour des données de surveillance
-            self.suspicious_ips[ip] = {
-                'last_seen': datetime.now().timestamp(),
-                'score': suspicious_score,
-                'reasons': reasons
-            }
+            attack_type = self.detect_attack_type(path, request.POST or request.GET)
             
             self.log_attempt(request, ip, attack_type)
 
