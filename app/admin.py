@@ -229,6 +229,6 @@ class ScheduleAdmin(admin.ModelAdmin):
    deactivate_schedules.short_description = "Désactiver les horaires sélectionnés"
 
 # Personnalisation de l'interface d'administration
-admin.site.site_header = "Bus Management System"
-admin.site.site_title = "BMS Admin Portal"
-admin.site.index_title = "Welcome to Bus Management System"
+admin.site.site_header = "LIMAJS Travel Management System"
+admin.site.site_title = " Admin Portal"
+admin.site.index_title = "Welcome"
