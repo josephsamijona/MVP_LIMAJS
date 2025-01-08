@@ -104,7 +104,7 @@ class TrollingSecurityMiddleware:
             'panel', 'console', 'sysadmin', 'root',
             'supervisor', 'manager', 'manage', 'administration',
             'backend', 'private', 'secret', 'restricted',
-            'login', 'signin', 'setup', 'install',
+            'signin', 'setup', 'install',
         ]
         
         # 5. Patterns d'Attaque Standards
