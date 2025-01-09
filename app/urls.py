@@ -7,7 +7,8 @@ from .views import (
     DriverLoginView,
     DriverLogoutView,
     DriverProfileView,
-    DriverTokenRefreshView
+    DriverTokenRefreshView, passenger_login, passenger_logout
+    
 )
 
 router = DefaultRouter()
@@ -18,5 +19,7 @@ urlpatterns = [
     path('drivera/logout/', DriverLogoutView.as_view()),
     path('drivera/profile/', DriverProfileView.as_view()),
     path('drivera/refresh/', DriverTokenRefreshView.as_view()),
+    path('passenger/login/', passenger_login, name='passenger_login'),
+    path('passenger/logout/', passenger_logout, name='passenger_logout'),
     path('', include(router.urls)),
 ]

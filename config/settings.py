@@ -100,6 +100,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "app.middleware.auth_middleware.PassengerAccessMiddleware",
     
 ]
 
@@ -247,3 +248,5 @@ REST_FRAMEWORK = {
 AUTH_USER_MODEL = 'app.User'  # Remplacez 'app' par le nom de votre application
 # Configuration WhiteNoise pour servir les fichiers statiques en production
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+LOGIN_URL = 'passenger_login'
+LOGIN_REDIRECT_URL = 'passenger_dashboard'

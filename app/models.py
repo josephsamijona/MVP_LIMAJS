@@ -237,3 +237,51 @@ class Schedule(models.Model):
 
     class Meta:
         ordering = ['departure_time']
+        
+        
+class Notification(models.Model):
+    """
+    Table pour gérer les notifications des utilisateurs
+    """
+    NOTIFICATION_TYPES = [
+        ('SUB_7_DAYS', 'Abònman w ap fini nan 7 jou'),  # L'abonnement finit dans 7 jours
+        ('SUB_3_DAYS', 'Abònman w ap fini nan 3 jou'),  # L'abonnement finit dans 3 jours
+        ('SUB_1_DAY', 'Abònman w ap fini demen'),       # L'abonnement finit demain
+        ('SUB_TODAY', 'Abònman w ap fini jodi a'),      # L'abonnement finit aujourd'hui
+        ('SUB_EXPIRED', 'Abònman w fini'),              # L'abonnement est terminé
+        ('BUS_DELAY', 'Bus la an reta'),                # Le bus est en retard
+        ('BUS_ARRIVAL', 'Bus la prèske rive'),          # Le bus arrive bientôt
+        ('SYSTEM_UPDATE', 'Mizajou sistèm lan'),        # Mise à jour système
+        ('ROUTE_CHANGE', 'Chanjman nan wout la'),       # Changement d'itinéraire
+    ]
+
+    user = models.ForeignKey(
+        'User',  
+        on_delete=models.CASCADE,
+        related_name='notifications'
+    )
+    notification_type = models.CharField(
+        max_length=20,
+        choices=NOTIFICATION_TYPES
+    )
+    message = models.TextField()
+    read = models.BooleanField(default=False)
+    is_email_sent = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Notification"
+        verbose_name_plural = "Notifications"
+
+    def __str__(self):
+        return f"{self.user.username} - {self.get_notification_type_display()} - {self.created_at.strftime('%d/%m/%Y %H:%M')}"
+
+    def mark_as_read(self):
+        self.read = True
+        self.save()
+
+    def mark_email_as_sent(self):
+        self.is_email_sent = True
+        self.save()
