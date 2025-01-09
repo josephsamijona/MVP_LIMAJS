@@ -1,0 +1,274 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Orè Bus - LIMAJS MOTORS{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="schedules-container">
+   <!-- En-tête de la page -->
+   <div class="schedules-header">
+       <h1>Orè {{ current_day }}</h1>
+       <div class="period-badges">
+           <div class="period-badge {% if current_period == 'morning' %}active{% endif %}">
+               <i class="ri-sun-line"></i>
+               <span>Maten</span>
+               <small>{{ morning_range }}</small>
+           </div>
+           <div class="period-badge {% if current_period == 'afternoon' %}active{% endif %}">
+               <i class="ri-sun-foggy-line"></i>
+               <span>Aprè Midi</span>
+               <small>{{ afternoon_range }}</small>
+           </div>
+       </div>
+   </div>
+
+   <!-- Section Matin -->
+   <div class="schedule-section card">
+       <div class="section-header">
+           <h2><i class="ri-sun-line"></i> Orè Maten</h2>
+           <span class="time-range">{{ morning_range }}</span>
+       </div>
+       {% if morning_schedules %}
+       <div class="schedules-grid">
+           {% for schedule in morning_schedules %}
+           <div class="schedule-card {% if schedule.departure_time|time <= current_time|time %}passed{% endif %}">
+               <div class="time-badge">{{ schedule.departure_time|time:"H:i" }}</div>
+               <div class="schedule-info">
+                   <h3>{{ schedule.route.name }}</h3>
+                   <p class="stop-name">{{ schedule.stop.name }}</p>
+                   <p class="arrival-time">
+                       <i class="ri-time-line"></i>
+                       Rive: {{ schedule.arrival_time|time:"H:i" }}
+                   </p>
+               </div>
+           </div>
+           {% endfor %}
+       </div>
+       {% else %}
+       <div class="no-schedules">
+           <i class="ri-information-line"></i>
+           <p>Pa gen orè disponib pou maten an</p>
+       </div>
+       {% endif %}
+   </div>
+
+   <!-- Section Après-midi -->
+   <div class="schedule-section card">
+       <div class="section-header">
+           <h2><i class="ri-sun-foggy-line"></i> Orè Aprè Midi</h2>
+           <span class="time-range">{{ afternoon_range }}</span>
+       </div>
+       {% if afternoon_schedules %}
+       <div class="schedules-grid">
+           {% for schedule in afternoon_schedules %}
+           <div class="schedule-card {% if schedule.departure_time|time <= current_time|time %}passed{% endif %}">
+               <div class="time-badge">{{ schedule.departure_time|time:"H:i" }}</div>
+               <div class="schedule-info">
+                   <h3>{{ schedule.route.name }}</h3>
+                   <p class="stop-name">{{ schedule.stop.name }}</p>
+                   <p class="arrival-time">
+                       <i class="ri-time-line"></i>
+                       Rive: {{ schedule.arrival_time|time:"H:i" }}
+                   </p>
+               </div>
+           </div>
+           {% endfor %}
+       </div>
+       {% else %}
+       <div class="no-schedules">
+           <i class="ri-information-line"></i>
+           <p>Pa gen orè disponib pou aprè midi a</p>
+       </div>
+       {% endif %}
+   </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.schedules-container {
+   padding: var(--space-lg);
+   margin-top: 70px;
+}
+
+.schedules-header {
+   margin-bottom: var(--space-xl);
+   text-align: center;
+}
+
+.period-badges {
+   display: flex;
+   justify-content: center;
+   gap: var(--space-md);
+   margin-top: var(--space-md);
+}
+
+.period-badge {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   padding: var(--space-md);
+   border-radius: var(--radius-lg);
+   background: var(--white);
+   box-shadow: var(--shadow-sm);
+   min-width: 150px;
+}
+
+.period-badge.active {
+   background: var(--primary);
+   color: var(--white);
+}
+
+.period-badge i {
+   font-size: 1.5rem;
+   margin-bottom: var(--space-xs);
+}
+
+.period-badge small {
+   margin-top: var(--space-xs);
+   opacity: 0.8;
+}
+
+.schedule-section {
+   margin-bottom: var(--space-xl);
+}
+
+.section-header {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   padding: var(--space-md);
+   border-bottom: 1px solid var(--gray-200);
+}
+
+.schedules-grid {
+   display: grid;
+   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+   gap: var(--space-md);
+   padding: var(--space-md);
+}
+
+.schedule-card {
+   position: relative;
+   background: var(--white);
+   border-radius: var(--radius-md);
+   padding: var(--space-md);
+   box-shadow: var(--shadow-sm);
+   transition: transform 0.2s ease;
+}
+
+.schedule-card:hover {
+   transform: translateY(-2px);
+   box-shadow: var(--shadow-md);
+}
+
+.schedule-card.passed {
+   opacity: 0.6;
+}
+
+.time-badge {
+   position: absolute;
+   top: -10px;
+   right: 10px;
+   background: var(--primary);
+   color: var(--white);
+   padding: var(--space-xs) var(--space-sm);
+   border-radius: var(--radius-md);
+   font-weight: 600;
+}
+
+.schedule-info h3 {
+   margin-bottom: var(--space-xs);
+   color: var(--gray-800);
+}
+
+.stop-name {
+   color: var(--gray-600);
+   margin-bottom: var(--space-xs);
+}
+
+.arrival-time {
+   display: flex;
+   align-items: center;
+   gap: var(--space-xs);
+   color: var(--gray-500);
+   font-size: 0.9rem;
+}
+
+.no-schedules {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   padding: var(--space-xl);
+   color: var(--gray-500);
+}
+
+.no-schedules i {
+   font-size: 2rem;
+   margin-bottom: var(--space-sm);
+}
+
+@media (max-width: 768px) {
+   .schedules-container {
+       padding: var(--space-md);
+   }
+
+   .period-badges {
+       flex-direction: column;
+       align-items: center;
+   }
+
+   .period-badge {
+       width: 100%;
+       max-width: 300px;
+   }
+
+   .schedules-grid {
+       grid-template-columns: 1fr;
+   }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+   // Mettre à jour les horaires en temps réel
+   async function updateSchedules() {
+       try {
+           const response = await fetch('/api/schedules/', {
+               headers: {
+                   'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+               },
+               credentials: 'same-origin'
+           });
+
+           const data = await response.json();
+           // Mettre à jour l'interface si nécessaire
+           updateScheduleCards(data.schedules);
+       } catch (error) {
+           console.error('Erreur lors de la mise à jour des horaires:', error);
+       }
+   }
+
+   // Mettre à jour les cartes d'horaires
+   function updateScheduleCards(schedules) {
+       const currentTime = new Date();
+       document.querySelectorAll('.schedule-card').forEach(card => {
+           const timeStr = card.querySelector('.time-badge').textContent;
+           const [hours, minutes] = timeStr.split(':').map(Number);
+           const scheduleTime = new Date();
+           scheduleTime.setHours(hours, minutes);
+
+           if (scheduleTime < currentTime) {
+               card.classList.add('passed');
+           }
+       });
+   }
+
+   // Mettre à jour toutes les minutes
+   setInterval(updateSchedules, 60000);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,127 @@
+<!-- templates/base.html -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>{% block title %}LIMAJS MOTORS{% endblock %}</title>
+   
+   <!-- Fonts -->
+   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+   
+   <!-- Icons -->
+   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+   
+   <!-- CSS -->
+   <link rel="stylesheet" href="{% static 'css/global.css' %}">
+   {% block extra_css %}{% endblock %}
+</head>
+<body>
+   <!-- Header -->
+   <!-- templates/base.html (section header modifiée) -->
+    <header class="header">
+        <div class="header-container">
+            <!-- Logo et Toggle Menu -->
+            <div class="header-left">
+                <button class="sidebar-toggle" aria-label="Toggle Sidebar">
+                    <i class="ri-menu-line"></i>
+                </button>
+                <div class="logo-container">
+                    <a href="{% url 'passenger_dashboard' %}" class="logo">
+                        <img src="{% static 'img/logo.png' %}" alt="LIMAJS MOTORS Logo" class="logo-img">
+                    </a>
+                </div>
+            </div>
+
+            <!-- Menu de droite -->
+            <div class="header-right">
+                <!-- Notifications -->
+                <div class="notifications-dropdown">
+                    <button class="notifications-trigger" aria-label="Notifications">
+                        <i class="ri-notification-line"></i>
+                        {% if unread_notifications_count > 0 %}
+                            <span class="notification-badge">{{ unread_notifications_count }}</span>
+                        {% endif %}
+                    </button>
+                    <div class="notifications-menu">
+                        <div class="notifications-header">
+                            <h3>Notifications</h3>
+                        </div>
+                        <div class="notifications-content">
+                            {% for notification in notifications %}
+                            <div class="notification-item {% if not notification.read %}unread{% endif %}">
+                                <i class="ri-information-line"></i>
+                                <div class="notification-details">
+                                    <p>{{ notification.message }}</p>
+                                    <small>{{ notification.created_at|timesince }}</small>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="no-notifications">
+                                <p>Pa gen notifikasyon</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Déconnexion -->
+                <a href="{% url 'logout' %}" class="logout-btn">
+                    <i class="ri-logout-box-line"></i>
+                    <span>Déconnexion</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+   <!-- Sidebar -->
+   <aside class="sidebar">
+       <nav class="sidebar-nav">
+           <ul>
+               <li {% if request.resolver_match.url_name == 'passenger_dashboard' %}class="active"{% endif %}>
+                   <a href="{% url 'passenger_dashboard' %}">
+                       <i class="ri-home-line"></i>
+                       <span>Akèy</span>
+                   </a>
+               </li>
+               <li {% if request.resolver_match.url_name == 'passenger_tracking' %}class="active"{% endif %}>
+                   <a href="{% url 'passenger_tracking' %}">
+                       <i class="ri-map-pin-line"></i>
+                       <span>Tracking</span>
+                   </a>
+               </li>
+               <li {% if request.resolver_match.url_name == 'passenger_history' %}class="active"{% endif %}>
+                   <a href="{% url 'passenger_history' %}">
+                       <i class="ri-history-line"></i>
+                       <span>Istorik</span>
+                   </a>
+               </li>
+               <li {% if request.resolver_match.url_name == 'passenger_schedules' %}class="active"{% endif %}>
+                   <a href="{% url 'passenger_schedules' %}">
+                       <i class="ri-time-line"></i>
+                       <span>Orè</span>
+                   </a>
+               </li>
+           </ul>
+       </nav>
+   </aside>
+
+   <!-- Main Content -->
+   <main class="main-content">
+       <div class="container">
+           {% block content %}{% endblock %}
+       </div>
+   </main>
+
+   <!-- Footer -->
+   <footer class="footer">
+       <div class="container">
+           <p>&copy; {% now "Y" %} LIMAJS MOTORS S.A. Tout dwa rezève.</p>
+       </div>
+   </footer>
+
+   <!-- JavaScript -->
+   <script src="{% static 'js/dashboard.js' %}"></script>
+   {% block extra_js %}{% endblock %}
+</body>
+</html>

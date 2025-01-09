@@ -1,0 +1,357 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Istorik Vwayaj - LIMAJS MOTORS{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="history-container">
+   <!-- En-tête avec statistiques -->
+   <div class="stats-grid">
+       <div class="stat-card">
+           <div class="stat-icon">
+               <i class="ri-bus-line"></i>
+           </div>
+           <div class="stat-content">
+               <h3>Total Vwayaj</h3>
+               <p class="stat-value">{{ total_travels }}</p>
+           </div>
+       </div>
+       <div class="stat-card">
+           <div class="stat-icon">
+               <i class="ri-calendar-check-line"></i>
+           </div>
+           <div class="stat-content">
+               <h3>Vwayaj Semèn nan</h3>
+               <p class="stat-value">{{ last_week_travels }}</p>
+           </div>
+       </div>
+       <div class="stat-card">
+           <div class="stat-icon">
+               <i class="ri-calendar-event-line"></i>
+           </div>
+           <div class="stat-content">
+               <h3>Vwayaj Mwa a</h3>
+               <p class="stat-value">{{ current_month_travels }}</p>
+           </div>
+       </div>
+   </div>
+
+   <!-- Filtres -->
+   <div class="filters-section card">
+       <div class="filter-buttons">
+           {% for option in filter_options %}
+           <button class="filter-btn {% if current_filter == option.value %}active{% endif %}" 
+                   data-period="{{ option.value }}">
+               {{ option.label }}
+           </button>
+           {% endfor %}
+       </div>
+       
+       <div class="date-filters">
+           <div class="date-input">
+               <label for="start_date">Dat Kòmansman</label>
+               <input type="date" id="start_date" name="start_date">
+           </div>
+           <div class="date-input">
+               <label for="end_date">Dat Fen</label>
+               <input type="date" id="end_date" name="end_date">
+           </div>
+           <button class="btn btn-primary" id="apply-filter">
+               <i class="ri-filter-line"></i> Filtre
+           </button>
+       </div>
+   </div>
+
+   <!-- Liste des voyages -->
+   <div class="travels-list card">
+       {% if travels %}
+           <div class="travels-grid">
+               {% for travel in travels %}
+               <div class="travel-card">
+                   <div class="travel-header">
+                       <span class="travel-date">{{ travel.scan_timestamp|date:"d/m/Y" }}</span>
+                       <span class="travel-time">{{ travel.scan_timestamp|time:"H:i" }}</span>
+                   </div>
+                   <div class="travel-details">
+                       {% if travel.schedule %}
+                           <p class="route-info">{{ travel.schedule.route_name }}</p>
+                       {% endif %}
+                       <p class="driver-info">
+                           <i class="ri-user-line"></i>
+                           {{ travel.driver.get_full_name }}
+                       </p>
+                       {% if travel.latitude and travel.longitude %}
+                           <a href="#" class="view-location" 
+                              data-lat="{{ travel.latitude }}" 
+                              data-lng="{{ travel.longitude }}">
+                               <i class="ri-map-pin-line"></i> Wè sou kat la
+                           </a>
+                       {% endif %}
+                   </div>
+               </div>
+               {% endfor %}
+           </div>
+
+           <!-- Pagination -->
+           {% if is_paginated %}
+           <div class="pagination">
+               {% if page_obj.has_previous %}
+                   <a href="?page=1" class="pagination-btn">&laquo; Premye</a>
+                   <a href="?page={{ page_obj.previous_page_number }}" class="pagination-btn">Anvan</a>
+               {% endif %}
+
+               <span class="current-page">
+                   Paj {{ page_obj.number }} sou {{ page_obj.paginator.num_pages }}
+               </span>
+
+               {% if page_obj.has_next %}
+                   <a href="?page={{ page_obj.next_page_number }}" class="pagination-btn">Apre</a>
+                   <a href="?page={{ page_obj.paginator.num_pages }}" class="pagination-btn">Dènye &raquo;</a>
+               {% endif %}
+           </div>
+           {% endif %}
+       {% else %}
+           <div class="no-travels">
+               <i class="ri-information-line"></i>
+               <p>Ou poko fè okenn vwayaj</p>
+           </div>
+       {% endif %}
+   </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.history-container {
+   padding: var(--space-lg);
+   margin-top: 70px;
+}
+
+.stats-grid {
+   display: grid;
+   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+   gap: var(--space-md);
+   margin-bottom: var(--space-lg);
+}
+
+.stat-card {
+   background: var(--white);
+   border-radius: var(--radius-lg);
+   padding: var(--space-lg);
+   box-shadow: var(--shadow-sm);
+   display: flex;
+   align-items: center;
+   gap: var(--space-md);
+}
+
+.stat-icon {
+   font-size: 2rem;
+   color: var(--primary);
+   background: var(--gray-100);
+   padding: var(--space-md);
+   border-radius: 50%;
+}
+
+.stat-value {
+   font-size: 1.5rem;
+   font-weight: 600;
+   color: var(--gray-900);
+}
+
+.filters-section {
+   margin-bottom: var(--space-lg);
+   padding: var(--space-lg);
+}
+
+.filter-buttons {
+   display: flex;
+   gap: var(--space-sm);
+   margin-bottom: var(--space-md);
+   flex-wrap: wrap;
+}
+
+.filter-btn {
+   padding: var(--space-sm) var(--space-md);
+   border: 1px solid var(--gray-200);
+   border-radius: var(--radius-md);
+   background: var(--white);
+   cursor: pointer;
+   transition: all 0.2s ease;
+}
+
+.filter-btn.active {
+   background: var(--primary);
+   color: var(--white);
+   border-color: var(--primary);
+}
+
+.date-filters {
+   display: flex;
+   gap: var(--space-md);
+   align-items: flex-end;
+   flex-wrap: wrap;
+}
+
+.date-input {
+   display: flex;
+   flex-direction: column;
+   gap: var(--space-xs);
+}
+
+.travels-grid {
+   display: grid;
+   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+   gap: var(--space-md);
+   padding: var(--space-md);
+}
+
+.travel-card {
+   background: var(--white);
+   border-radius: var(--radius-md);
+   padding: var(--space-md);
+   box-shadow: var(--shadow-sm);
+   transition: transform 0.2s ease;
+}
+
+.travel-card:hover {
+   transform: translateY(-2px);
+   box-shadow: var(--shadow-md);
+}
+
+.travel-header {
+   display: flex;
+   justify-content: space-between;
+   margin-bottom: var(--space-sm);
+   padding-bottom: var(--space-sm);
+   border-bottom: 1px solid var(--gray-200);
+}
+
+.travel-time {
+   color: var(--primary);
+   font-weight: 500;
+}
+
+.travel-details {
+   display: flex;
+   flex-direction: column;
+   gap: var(--space-xs);
+}
+
+.pagination {
+   display: flex;
+   justify-content: center;
+   gap: var(--space-sm);
+   padding: var(--space-lg);
+   align-items: center;
+}
+
+.pagination-btn {
+   padding: var(--space-xs) var(--space-sm);
+   border: 1px solid var(--gray-200);
+   border-radius: var(--radius-sm);
+   text-decoration: none;
+   color: var(--gray-700);
+}
+
+.current-page {
+   padding: var(--space-xs) var(--space-sm);
+   background: var(--gray-100);
+   border-radius: var(--radius-sm);
+}
+
+@media (max-width: 768px) {
+   .history-container {
+       padding: var(--space-md);
+   }
+
+   .date-filters {
+       flex-direction: column;
+   }
+
+   .date-input {
+       width: 100%;
+   }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+   const filterButtons = document.querySelectorAll('.filter-btn');
+   const startDate = document.getElementById('start_date');
+   const endDate = document.getElementById('end_date');
+   const applyFilter = document.getElementById('apply-filter');
+
+   // Gestion des filtres rapides
+   filterButtons.forEach(button => {
+       button.addEventListener('click', () => {
+           const period = button.dataset.period;
+           window.location.href = `?period=${period}`;
+       });
+   });
+
+   // Gestion du filtre par date
+   applyFilter.addEventListener('click', async () => {
+       if (!startDate.value || !endDate.value) {
+           alert('Tanpri, chwazi dat yo');
+           return;
+       }
+
+       try {
+           const response = await fetch(`/api/history/filter/?start_date=${startDate.value}&end_date=${endDate.value}`, {
+               headers: {
+                   'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+               },
+               credentials: 'same-origin'
+           });
+
+           const data = await response.json();
+           if (data.status === 'success') {
+               updateTravelsList(data.data);
+           }
+       } catch (error) {
+           console.error('Erreur:', error);
+       }
+   });
+
+   function updateTravelsList(travels) {
+       const travelsList = document.querySelector('.travels-grid');
+       if (!travelsList) return;
+
+       if (travels.length === 0) {
+           travelsList.innerHTML = `
+               <div class="no-travels">
+                   <i class="ri-information-line"></i>
+                   <p>Pa gen vwayaj pou peryòd sa a</p>
+               </div>
+           `;
+           return;
+       }
+
+       travelsList.innerHTML = travels.map(travel => `
+           <div class="travel-card">
+               <div class="travel-header">
+                   <span class="travel-date">${travel.date.split(' ')[0]}</span>
+                   <span class="travel-time">${travel.date.split(' ')[1]}</span>
+               </div>
+               <div class="travel-details">
+                   <p class="driver-info">
+                       <i class="ri-user-line"></i>
+                       ${travel.driver}
+                   </p>
+                   ${travel.latitude && travel.longitude ? `
+                       <a href="#" class="view-location" 
+                          data-lat="${travel.latitude}" 
+                          data-lng="${travel.longitude}">
+                           <i class="ri-map-pin-line"></i> Wè sou kat la
+                       </a>
+                   ` : ''}
+               </div>
+           </div>
+       `).join('');
+   }
+});
+</script>
+{% endblock %}

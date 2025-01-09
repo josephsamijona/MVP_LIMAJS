@@ -1,0 +1,243 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tableau de Bord - LIMAJS MOTORS{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="dashboard-container fade-in">
+    <!-- Section Abonnement -->
+    <section class="card subscription-card">
+        <div class="card-header">
+            <h2>Abònman</h2>
+        </div>
+        <div class="subscription-status {% if subscription_status %}status-{{ subscription_status }}{% else %}status-expired{% endif %}">
+            <i class="ri-error-warning-line"></i>
+            {% if subscription %}
+                <p class="subscription-message">
+                    {% if subscription_status == 'expired' %}
+                        Abònman w ekspire
+                    {% elif subscription_status == 'critical' %}
+                        Abònman w ap ekspire nan {{ days_remaining }} jou
+                    {% elif subscription_status == 'warning' %}
+                        Abònman w ap ekspire nan {{ days_remaining }} jou
+                    {% elif subscription_status == 'notice' %}
+                        Abònman w ap ekspire nan {{ days_remaining }} jou
+                    {% else %}
+                        Abònman w valid
+                    {% endif %}
+                </p>
+                <p class="subscription-details">
+                    Dat ekspirasyon: {{ subscription.end_date|date:"d/m/Y" }}
+                </p>
+            {% else %}
+                <p>Ou pa gen abònman aktif</p>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- Section Derniers Voyages -->
+    <section class="card recent-travels-card">
+        <div class="card-header">
+            <h2>Dènye Vwayaj yo</h2>
+        </div>
+        <div class="card-content">
+            {% if recent_travels %}
+                <div class="travels-list">
+                    {% for travel in recent_travels %}
+                        <div class="travel-item">
+                            <div class="travel-icon">
+                                <i class="ri-bus-line"></i>
+                            </div>
+                            <div class="travel-details">
+                                <span class="travel-time">{{ travel.scan_timestamp|date:"H:i" }}</span>
+                                <p class="travel-date">{{ travel.scan_timestamp|date:"d/m/Y" }}</p>
+                                <p class="travel-info">Chofè: {{ travel.driver.get_full_name }}</p>
+                            </div>
+                            {% if travel.schedule %}
+                                <div class="travel-schedule">
+                                    <p>{{ travel.schedule.route_name }}</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'passenger_history' %}" class="btn btn-primary">
+                        <i class="ri-history-line"></i>
+                        Wè tout istwa
+                    </a>
+                </div>
+            {% else %}
+                <div class="no-data">
+                    <i class="ri-information-line"></i>
+                    <p>Pa gen vwayaj pou lemoman</p>
+                </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- Section Horaires du Jour -->
+    <section class="card schedules-card">
+        <div class="card-header">
+            <h2>Orè Jodi a</h2>
+        </div>
+        <div class="card-content">
+            {% if today_schedules %}
+                <div class="schedules-list">
+                    {% for schedule in today_schedules %}
+                        <div class="schedule-item">
+                            <div class="schedule-time">
+                                <i class="ri-time-line"></i>
+                                <span>{{ schedule.departure_time|time:"H:i" }}</span>
+                            </div>
+                            <div class="schedule-details">
+                                {% if schedule.route %}
+                                    <p>{{ schedule.route.name }}</p>
+                                {% endif %}
+                                {% if schedule.stop %}
+                                    <small>{{ schedule.stop.name }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'passenger_schedules' %}" class="btn btn-primary">
+                        <i class="ri-calendar-line"></i>
+                        Wè tout orè yo
+                    </a>
+                </div>
+            {% else %}
+                <div class="no-data">
+                    <i class="ri-information-line"></i>
+                    <p>Pa gen orè disponib pou jodi a</p>
+                </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- Section Bus Actifs -->
+    <section class="card active-buses-card">
+        <div class="card-header">
+            <h2>Bus an Sèvis</h2>
+        </div>
+        <div class="card-content">
+            {% if active_buses %}
+                <div class="buses-list">
+                    {% for bus in active_buses %}
+                        <div class="bus-item">
+                            <div class="bus-icon">
+                                <i class="ri-bus-2-line"></i>
+                            </div>
+                            <div class="bus-details">
+                                <p class="driver-name">{{ bus.driver.get_full_name }}</p>
+                                <small class="last-update">
+                                    Dènye mizajou: {{ bus.timestamp|time:"H:i" }}
+                                </small>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'passenger_tracking' %}" class="btn btn-primary">
+                        <i class="ri-map-pin-line"></i>
+                        Swiv bus yo
+                    </a>
+                </div>
+            {% else %}
+                <div class="no-data">
+                    <i class="ri-information-line"></i>
+                    <p>Pa gen bus an sèvis pou lemoman</p>
+                </div>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: var(--space-lg);
+        padding: var(--space-lg);
+        margin-top: 70px;
+    }
+
+    .card {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .card-header {
+        padding: var(--space-md);
+        border-bottom: 1px solid var(--gray-200);
+    }
+
+    .card-header h2 {
+        margin: 0;
+        font-size: 1.25rem;
+        color: var(--gray-800);
+    }
+
+    .card-content {
+        padding: var(--space-md);
+    }
+
+    .card-footer {
+        padding: var(--space-md);
+        border-top: 1px solid var(--gray-200);
+        text-align: center;
+    }
+
+    /* Styles spécifiques aux sections */
+    .subscription-status {
+        padding: var(--space-lg);
+        text-align: center;
+        border-radius: var(--radius-md);
+    }
+
+    .travel-item, .schedule-item, .bus-item {
+        display: flex;
+        align-items: center;
+        padding: var(--space-md);
+        border-bottom: 1px solid var(--gray-200);
+        transition: background-color 0.2s ease;
+    }
+
+    .travel-item:hover, .schedule-item:hover, .bus-item:hover {
+        background-color: var(--gray-50);
+    }
+
+    .no-data {
+        text-align: center;
+        padding: var(--space-xl);
+        color: var(--gray-500);
+    }
+
+    .no-data i {
+        font-size: 2rem;
+        margin-bottom: var(--space-sm);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .dashboard-container {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/notifications.js' %}"></script>
+{% endblock %}
