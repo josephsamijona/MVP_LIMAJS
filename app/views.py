@@ -26,6 +26,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from app.forms import PassengerLoginForm
 from django.views.decorators.http import require_http_methods
+from django.http import JsonResponse
 from app.models import (
     Subscription,
     TravelHistory,
@@ -33,7 +34,7 @@ from app.models import (
     BusLocation,
     Route,
     Stop,
-    #Notification
+    Notification
 )
 
 from django.views.generic import ListView
@@ -400,3 +401,259 @@ class TravelHistoryView(LoginRequiredMixin, ListView):
            )
 
        return queryset.order_by('-scan_timestamp')
+   
+
+
+class BusTrackingView(LoginRequiredMixin, TemplateView):
+    """Vue principale pour afficher la carte et les positions initiales des bus"""
+    template_name = 'passenger/bus_tracking.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        current_time = timezone.now()
+        current_weekday = current_time.strftime('%A')[:3].upper()
+        current_time_obj = current_time.time()
+
+        # Définition des plages horaires de service
+        morning_start = time(5, 0)  # 5h du matin
+        morning_end = time(12, 0)   # 12h
+        afternoon_start = time(12, 0) # 12h
+        afternoon_end = time(19, 0)  # 19h
+
+        # Déterminer la période actuelle
+        if morning_start <= current_time_obj <= morning_end:
+            tracking_start = datetime.combine(current_time.date(), morning_start) - timedelta(hours=2)
+            tracking_end = datetime.combine(current_time.date(), morning_end)
+            context['period'] = 'morning'
+        elif afternoon_start <= current_time_obj <= afternoon_end:
+            tracking_start = datetime.combine(current_time.date(), afternoon_start)
+            tracking_end = datetime.combine(current_time.date(), afternoon_end) + timedelta(hours=3)
+            context['period'] = 'afternoon'
+        else:
+            context['tracking_available'] = False
+            context['period'] = 'closed'
+            return context
+
+        # Si on est dans une période valide
+        context['tracking_available'] = True
+        context['tracking_start'] = tracking_start
+        context['tracking_end'] = tracking_end
+
+        # Récupération des horaires actifs pour la période
+        active_schedules = Schedule.objects.filter(
+            day_of_week=current_weekday,
+            is_active=True,
+            departure_time__gte=tracking_start.time(),
+            departure_time__lte=tracking_end.time()
+        ).select_related('driver')
+
+        # Récupération des dernières positions des bus
+        bus_locations = BusLocation.objects.filter(
+            timestamp__gte=tracking_start,
+            timestamp__lte=tracking_end,
+            driver__busschedule__is_active=True
+        ).select_related('driver').order_by('driver', '-timestamp')
+
+        # Création de l'historique des trajectoires
+        bus_trajectories = {}
+        for location in bus_locations:
+            if location.driver_id not in bus_trajectories:
+                bus_trajectories[location.driver_id] = []
+            bus_trajectories[location.driver_id].append({
+                'driver_id': location.driver.id,
+                'driver_name': location.driver.get_full_name(),
+                'latitude': float(location.latitude),
+                'longitude': float(location.longitude),
+                'timestamp': location.timestamp.strftime('%H:%M:%S')
+            })
+
+        context.update({
+            'active_schedules': active_schedules,
+            'bus_locations': bus_locations,
+            'bus_trajectories': bus_trajectories,
+            'current_time': current_time,
+            'tracking_period': {
+                'start': tracking_start.strftime('%H:%M'),
+                'end': tracking_end.strftime('%H:%M')
+            }
+        })
+
+        return context
+
+@login_required
+def get_real_time_bus_locations(request):
+    """Vue API pour les mises à jour en temps réel des positions des bus"""
+    current_time = timezone.now()
+    current_time_obj = current_time.time()
+
+    # Définition des plages horaires de service
+    morning_start = time(5, 0)
+    morning_end = time(12, 0)
+    afternoon_start = time(12, 0)
+    afternoon_end = time(19, 0)
+
+    # Vérifier si le tracking est disponible
+    if morning_start <= current_time_obj <= morning_end:
+        tracking_start = datetime.combine(current_time.date(), morning_start) - timedelta(hours=2)
+        tracking_end = datetime.combine(current_time.date(), morning_end)
+    elif afternoon_start <= current_time_obj <= afternoon_end:
+        tracking_start = datetime.combine(current_time.date(), afternoon_start)
+        tracking_end = datetime.combine(current_time.date(), afternoon_end) + timedelta(hours=3)
+    else:
+        return JsonResponse({
+            'tracking_available': False,
+            'message': 'Tracking non disponible en dehors des heures de service'
+        })
+
+    try:
+        # Récupération des dernières positions uniquement (5 dernières minutes)
+        latest_locations = BusLocation.objects.filter(
+            timestamp__gte=current_time - timedelta(minutes=5),
+            driver__busschedule__is_active=True
+        ).select_related('driver').order_by('driver', '-timestamp')
+
+        # Regrouper les positions par chauffeur pour avoir leur dernière position
+        driver_locations = {}
+        for loc in latest_locations:
+            if loc.driver_id not in driver_locations:
+                driver_locations[loc.driver_id] = {
+                    'driver_id': loc.driver.id,
+                    'driver_name': loc.driver.get_full_name(),
+                    'latitude': float(loc.latitude),
+                    'longitude': float(loc.longitude),
+                    'timestamp': loc.timestamp.strftime('%H:%M:%S'),
+                    'positions': []  # Pour la trajectoire
+                }
+            driver_locations[loc.driver_id]['positions'].append({
+                'latitude': float(loc.latitude),
+                'longitude': float(loc.longitude),
+                'timestamp': loc.timestamp.strftime('%H:%M:%S')
+            })
+
+        return JsonResponse({
+            'tracking_available': True,
+            'locations': list(driver_locations.values()),
+            'last_update': current_time.strftime('%H:%M:%S')
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'tracking_available': False,
+            'error': str(e)
+        })
+        
+@login_required
+def get_route_schedule(request):
+    """API pour obtenir les horaires filtrés"""
+    current_time = timezone.now()
+    current_weekday = current_time.strftime('%A')[:3].upper()
+
+    schedules = Schedule.objects.filter(
+        day_of_week=current_weekday,
+        is_active=True
+    ).select_related('driver')
+
+    data = [{
+        'id': schedule.id,
+        'departure_time': schedule.departure_time.strftime('%H:%M'),
+        'arrival_time': schedule.arrival_time.strftime('%H:%M'),
+        'driver_name': schedule.driver.get_full_name() if schedule.driver else 'Non assigné'
+    } for schedule in schedules]
+
+    return JsonResponse({'schedules': data})
+
+@login_required
+def filter_travel_history(request):
+    """API pour filtrer l'historique des voyages"""
+    try:
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+
+        queryset = TravelHistory.objects.filter(
+            passenger=request.user,
+            scan_timestamp__range=[start_date, end_date]
+        ).select_related('schedule', 'driver')
+
+        history_data = [{
+            'id': history.id,
+            'date': history.scan_timestamp.strftime('%Y-%m-%d %H:%M'),
+            'driver': history.driver.get_full_name(),
+            'latitude': float(history.latitude) if history.latitude else None,
+            'longitude': float(history.longitude) if history.longitude else None
+        } for history in queryset]
+
+        return JsonResponse({
+            'status': 'success',
+            'data': history_data
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=400)
+
+@login_required
+def check_subscription_status(request):
+    """API pour vérifier le statut de l'abonnement"""
+    try:
+        subscription = request.user.subscription_set.filter(
+            is_active=True
+        ).latest('end_date')
+
+        if not subscription:
+            return JsonResponse({
+                'status': 'no_subscription',
+                'message': 'Ou pa gen abònman aktif'
+            })
+
+        days_remaining = (subscription.end_date.date() - timezone.now().date()).days
+
+        return JsonResponse({
+            'status': 'active' if subscription.is_valid() else 'expired',
+            'days_remaining': days_remaining,
+            'end_date': subscription.end_date.strftime('%Y-%m-%d'),
+            'subscription_type': subscription.get_subscription_type_display()
+        })
+    except Subscription.DoesNotExist:
+        return JsonResponse({
+            'status': 'no_subscription',
+            'message': 'Ou pa gen abònman aktif'
+        })
+
+@login_required
+def get_unread_notifications(request):
+    """API pour obtenir les notifications non lues"""
+    notifications = Notification.objects.filter(
+        user=request.user,
+        read=False
+    ).order_by('-created_at')
+
+    data = [{
+        'id': notif.id,
+        'message': notif.message,
+        'type': notif.notification_type,
+        'created_at': notif.created_at.strftime('%Y-%m-%d %H:%M')
+    } for notif in notifications]
+
+    return JsonResponse({'notifications': data})
+
+@login_required
+def mark_notification_as_read(request, notification_id):
+    """API pour marquer une notification comme lue"""
+    try:
+        notification = Notification.objects.get(
+            id=notification_id,
+            user=request.user
+        )
+        notification.read = True
+        notification.save()
+
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Notifikasyon make kòm li'
+        })
+    except Notification.DoesNotExist:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Notifikasyon pa trouve'
+        }, status=404)
