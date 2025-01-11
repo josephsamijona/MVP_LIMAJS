@@ -8,6 +8,10 @@
     --text: #2D3748;
     --text-light: #718096;
     --white: #FFFFFF;
+    --success: #22C55E;
+    --error: #EF4444;
+    --warning: #F59E0B;
+    --info: #3B82F6;
     
     /* Glassmorphism */
     --glass-bg: rgba(255, 255, 255, 0.8);
@@ -70,6 +74,28 @@ body {
     display: none;
 }
 
+/* Navigation et boutons */
+.logout-btn {
+    background: none;
+    border: none;
+    color: var(--text);
+    cursor: pointer;
+    padding: 0.5rem;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logout-btn i {
+    font-size: 1.5rem;
+}
+
+.logout-btn:hover {
+    color: var(--primary);
+    transform: scale(1.1);
+}
+
 .glass-nav {
     position: fixed;
     bottom: 0;
@@ -92,19 +118,27 @@ body {
     text-decoration: none;
     color: var(--text-light);
     padding: 0.5rem;
-    transition: color 0.3s ease;
-}
-
-.nav-item.active {
-    color: var(--primary);
+    transition: all 0.3s ease;
+    cursor: pointer;
 }
 
 .nav-item i {
     font-size: 1.5rem;
     margin-bottom: 0.25rem;
+    transition: transform 0.3s ease;
 }
 
-.nav-item span {
+.nav-item.active,
+.nav-item:hover {
+    color: var(--primary);
+}
+
+.nav-item.active i,
+.nav-item:hover i {
+    transform: scale(1.1);
+}
+
+.nav-item span:not(.notification-badge) {
     font-size: 0.75rem;
 }
 
@@ -122,13 +156,14 @@ body {
 /* Notifications */
 .notification-container {
     position: fixed;
-    top: 60px;
-    right: 1rem;
-    width: 300px;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 500px;
     max-height: 80vh;
     overflow-y: auto;
     z-index: 1000;
-    padding: 1rem;
     background: var(--glass-bg);
     -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
@@ -140,7 +175,7 @@ body {
 .notification-badge {
     position: absolute;
     top: -5px;
-    right: -5px;
+    right: 0px;
     background: var(--primary);
     color: var(--white);
     border-radius: 50%;
@@ -151,6 +186,27 @@ body {
     align-items: center;
     justify-content: center;
 }
+
+/* Messages système */
+.messages-container {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    width: 90%;
+    max-width: 500px;
+}
+
+.message {
+    margin-bottom: 10px;
+    animation: slideIn 0.3s ease;
+}
+
+.message.success { border-left: 4px solid var(--success); }
+.message.error { border-left: 4px solid var(--error); }
+.message.warning { border-left: 4px solid var(--warning); }
+.message.info { border-left: 4px solid var(--info); }
 
 /* Boutons */
 .btn {
@@ -178,17 +234,17 @@ body {
     background: rgba(255, 255, 255, 0.9);
 }
 
-.logout-btn {
+.close-message {
     background: none;
     border: none;
-    color: var(--text);
+    color: var(--text-light);
     cursor: pointer;
     padding: 0.5rem;
     transition: color 0.3s ease;
 }
 
-.logout-btn:hover {
-    color: var(--primary);
+.close-message:hover {
+    color: var(--text);
 }
 
 /* Layout et Conteneurs */
@@ -212,17 +268,9 @@ body {
 }
 
 /* Utilitaires */
-.text-primary {
-    color: var(--primary);
-}
-
-.bg-primary {
-    background-color: var(--primary);
-}
-
-.hidden {
-    display: none !important;
-}
+.text-primary { color: var(--primary); }
+.bg-primary { background-color: var(--primary); }
+.hidden { display: none !important; }
 
 /* Animations */
 @keyframes fadeIn {
@@ -236,16 +284,21 @@ body {
     }
 }
 
+@keyframes slideIn {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
 @keyframes notification-pulse {
-    0% {
-        transform: scale(1);
-    }
-    50% {
-        transform: scale(1.1);
-    }
-    100% {
-        transform: scale(1);
-    }
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
 }
 
 .fade-in {
@@ -272,5 +325,12 @@ body {
     
     .card {
         padding: 2rem;
+    }
+    
+    .notification-container {
+        left: auto;
+        right: 1rem;
+        transform: none;
+        width: 400px;
     }
 }
