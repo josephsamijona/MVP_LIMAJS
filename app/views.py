@@ -415,10 +415,10 @@ class BusTrackingView(LoginRequiredMixin, TemplateView):
         current_time_obj = current_time.time()
 
         # Définition des plages horaires de service
-        morning_start = time(5, 0)  # 5h du matin
-        morning_end = time(12, 0)   # 12h
-        afternoon_start = time(12, 0) # 12h
-        afternoon_end = time(19, 0)  # 19h
+        morning_start = time(5, 0)
+        morning_end = time(12, 0)
+        afternoon_start = time(12, 0)
+        afternoon_end = time(19, 0)
 
         # Déterminer la période actuelle
         if morning_start <= current_time_obj <= morning_end:
@@ -434,24 +434,14 @@ class BusTrackingView(LoginRequiredMixin, TemplateView):
             context['period'] = 'closed'
             return context
 
-        # Si on est dans une période valide
         context['tracking_available'] = True
         context['tracking_start'] = tracking_start
         context['tracking_end'] = tracking_end
 
-        # Récupération des horaires actifs pour la période
-        active_schedules = Schedule.objects.filter(
-            day_of_week=current_weekday,
-            is_active=True,
-            departure_time__gte=tracking_start.time(),
-            departure_time__lte=tracking_end.time()
-        ).select_related('driver')
-
         # Récupération des dernières positions des bus
         bus_locations = BusLocation.objects.filter(
             timestamp__gte=tracking_start,
-            timestamp__lte=tracking_end,
-            driver__busschedule__is_active=True
+            timestamp__lte=tracking_end
         ).select_related('driver').order_by('driver', '-timestamp')
 
         # Création de l'historique des trajectoires
@@ -461,14 +451,13 @@ class BusTrackingView(LoginRequiredMixin, TemplateView):
                 bus_trajectories[location.driver_id] = []
             bus_trajectories[location.driver_id].append({
                 'driver_id': location.driver.id,
-                'driver_name': location.driver.get_full_name(),
+                'driver_name': f"{location.driver.first_name} {location.driver.last_name}",
                 'latitude': float(location.latitude),
                 'longitude': float(location.longitude),
                 'timestamp': location.timestamp.strftime('%H:%M:%S')
             })
 
         context.update({
-            'active_schedules': active_schedules,
             'bus_locations': bus_locations,
             'bus_trajectories': bus_trajectories,
             'current_time': current_time,
@@ -508,21 +497,20 @@ def get_real_time_bus_locations(request):
     try:
         # Récupération des dernières positions uniquement (5 dernières minutes)
         latest_locations = BusLocation.objects.filter(
-            timestamp__gte=current_time - timedelta(minutes=5),
-            driver__busschedule__is_active=True
+            timestamp__gte=current_time - timedelta(minutes=5)
         ).select_related('driver').order_by('driver', '-timestamp')
 
-        # Regrouper les positions par chauffeur pour avoir leur dernière position
+        # Regrouper les positions par chauffeur
         driver_locations = {}
         for loc in latest_locations:
             if loc.driver_id not in driver_locations:
                 driver_locations[loc.driver_id] = {
                     'driver_id': loc.driver.id,
-                    'driver_name': loc.driver.get_full_name(),
+                    'driver_name': f"{loc.driver.first_name} {loc.driver.last_name}",
                     'latitude': float(loc.latitude),
                     'longitude': float(loc.longitude),
                     'timestamp': loc.timestamp.strftime('%H:%M:%S'),
-                    'positions': []  # Pour la trajectoire
+                    'positions': []
                 }
             driver_locations[loc.driver_id]['positions'].append({
                 'latitude': float(loc.latitude),
