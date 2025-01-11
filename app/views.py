@@ -295,13 +295,13 @@ class RouteScheduleView(LoginRequiredMixin, ListView):
 
        # Obtenir le jour actuel en créole
        days_in_creole = {
-           'MON': 'Lendi',
-           'TUE': 'Madi', 
-           'WED': 'Mèkredi',
-           'THU': 'Jedi',
-           'FRI': 'Vandredi',
-           'SAT': 'Samdi',
-           'SUN': 'Dimanch'
+           'MON': 'Lundi',
+           'TUE': 'Mardi', 
+           'WED': 'Mercredi',
+           'THU': 'Jeudi',
+           'FRI': 'Vendredi',
+           'SAT': 'Samedi',
+           'SUN': 'Dimanche'
        }
        context['current_day'] = days_in_creole.get(current_weekday, current_weekday)
        
