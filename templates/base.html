@@ -4,304 +4,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}LIMAJS MOTORS{% endblock %}</title>
+    <title>{% block title %}LIMAJS MOTORS S.A{% endblock %}</title>
     
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-    <!-- Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-    <!-- CSS Global -->
-    <link rel="stylesheet" href="{% static 'css/global.css' %}">
-
-    <style>
-        /* Layout principal */
-        body {
-            display: grid;
-            grid-template-areas: 
-                "header header"
-                "sidebar main"
-                "footer footer";
-            grid-template-rows: 60px 1fr auto;
-            grid-template-columns: 250px 1fr;
-            min-height: 100vh;
-            margin: 0;
-            background-color: #f8fafc;
-        }
-
-        /* Header */
-        .header {
-            grid-area: header;
-            background: #fff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            padding: 0 20px;
-            position: fixed;
-            width: 100%;
-            height: 60px;
-            z-index: 1000;
-        }
-
-        .header-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            height: 100%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .logo-container {
-            display: flex;
-            align-items: center;
-        }
-
-        .logo-img {
-            height: 40px;
-            width: auto;
-        }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        /* Sidebar */
-        .sidebar {
-            grid-area: sidebar;
-            background: #fff;
-            width: 250px;
-            position: fixed;
-            height: calc(100vh - 60px);
-            top: 60px;
-            left: 0;
-            border-right: 1px solid #e2e8f0;
-            padding-top: 20px;
-        }
-
-        .sidebar-nav ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .sidebar-nav a {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 20px;
-            color: #1e293b;
-            text-decoration: none;
-            transition: background-color 0.2s;
-        }
-
-        .sidebar-nav a:hover,
-        .sidebar-nav .active a {
-            background-color: #2563eb;
-            color: #fff;
-        }
-
-        .sidebar-nav i {
-            font-size: 20px;
-        }
-
-        /* Main Content */
-        .main-content {
-            grid-area: main;
-            margin-left: 250px;
-            margin-top: 60px;
-            padding: 20px;
-            min-height: calc(100vh - 60px);
-        }
-
-        /* Footer */
-        .footer {
-            grid-area: footer;
-            background: #fff;
-            padding: 20px;
-            text-align: center;
-            border-top: 1px solid #e2e8f0;
-        }
-
-        /* Notifications */
-        .notifications-dropdown {
-            position: relative;
-        }
-
-        .notifications-trigger {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 20px;
-        }
-
-        .notification-badge {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background: #ef4444;
-            color: white;
-            border-radius: 50%;
-            padding: 2px 6px;
-            font-size: 12px;
-        }
-
-        .notifications-menu {
-            display: none;
-            position: absolute;
-            right: 0;
-            top: 100%;
-            width: 300px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-            margin-top: 10px;
-        }
-
-        .notifications-menu.show {
-            display: block;
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            body {
-                grid-template-areas: 
-                    "header"
-                    "main"
-                    "footer";
-                grid-template-columns: 1fr;
-            }
-
-            .sidebar {
-                transform: translateX(-100%);
-                transition: transform 0.3s ease;
-            }
-
-            .sidebar.show {
-                transform: translateX(0);
-            }
-
-            .main-content {
-                margin-left: 0;
-            }
-
-            .sidebar-toggle {
-                display: block;
-            }
-        }
-    </style>
-
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="57x57" href="{% static 'favicon/apple-icon-57x57.png' %}">
+    <link rel="apple-touch-icon" sizes="60x60" href="{% static 'favicon/apple-icon-60x60.png' %}">
+    <link rel="apple-touch-icon" sizes="72x72" href="{% static 'favicon/apple-icon-72x72.png' %}">
+    <link rel="apple-touch-icon" sizes="76x76" href="{% static 'favicon/apple-icon-76x76.png' %}">
+    <link rel="apple-touch-icon" sizes="114x114" href="{% static 'favicon/apple-icon-114x114.png' %}">
+    <link rel="apple-touch-icon" sizes="120x120" href="{% static 'favicon/apple-icon-120x120.png' %}">
+    <link rel="apple-touch-icon" sizes="144x144" href="{% static 'favicon/apple-icon-144x144.png' %}">
+    <link rel="apple-touch-icon" sizes="152x152" href="{% static 'favicon/apple-icon-152x152.png' %}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'favicon/apple-icon-180x180.png' %}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{% static 'favicon/android-icon-192x192.png' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'favicon/favicon-32x32.png' %}">
+    <link rel="icon" type="image/png" sizes="96x96" href="{% static 'favicon/favicon-96x96.png' %}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{% static 'favicon/favicon-16x16.png' %}">
+    <link rel="manifest" href="{% static 'favicon/manifest.json' %}">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="{% static 'favicon/ms-icon-144x144.png' %}">
+    <meta name="theme-color" content="#ffffff">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Leaflet pour la carte -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css">
+    
+    <!-- CSS Principal -->
+    <link rel="stylesheet" href="{% static 'css/passenger.css' %}">
+    
+    <!-- CSS Spécifique à la page -->
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    <!-- CSRF Token -->
+    {% csrf_token %}
+    
+    <!-- Header -->
     <header class="header">
-        <div class="header-container">
-            <div class="header-left">
-                <button class="sidebar-toggle" aria-label="Toggle Sidebar">
-                    <i class="ri-menu-line"></i>
-                </button>
-                <div class="logo-container">
-                    <a href="{% url 'passenger_dashboard' %}">
-                        <img src="{% static 'img/logo.png' %}" alt="LIMAJS MOTORS" class="logo-img">
-                    </a>
-                </div>
-            </div>
-
-            <div class="header-right">
-                <div class="notifications-dropdown">
-                    <button class="notifications-trigger">
-                        <i class="ri-notification-line"></i>
-                        {% if unread_notifications_count > 0 %}
-                            <span class="notification-badge">{{ unread_notifications_count }}</span>
-                        {% endif %}
-                    </button>
-                    <div class="notifications-menu">
-                        <div class="notifications-header">
-                            <h3>Notifications</h3>
-                        </div>
-                        <div class="notifications-content">
-                            {% for notification in notifications %}
-                                <div class="notification-item {% if not notification.read %}unread{% endif %}">
-                                    <p>{{ notification.message }}</p>
-                                    <small>{{ notification.created_at|timesince }}</small>
-                                </div>
-                            {% empty %}
-                                <p>Pa gen notifikasyon</p>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-                <a href="{% url 'passenger_logout' %}" class="logout-btn">
-                    <i class="ri-logout-box-line"></i>
-                    <span>Dekonekte</span>
-                </a>
-            </div>
+        <div class="header-brand">
+            <img src="{% static 'img/logo.png' %}" alt="LIMAJS MOTORS" class="logo-img" width="40" height="40">
+            <h1 class="header-title">LIMAJS MOTORS S.A</h1>
+        </div>
+        
+        <div class="header-buttons">
+            <button id="notifications" class="notification-btn">
+                <i class="fas fa-bell"></i>
+                <span class="notification-badge hidden">0</span>
+            </button>
+            <button id="logout" class="logout-btn" onclick="window.location.href='{% url 'passenger_logout' %}'">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
         </div>
     </header>
 
-    <aside class="sidebar">
-        <nav class="sidebar-nav">
-            <ul>
-                <li {% if request.resolver_match.url_name == 'passenger_dashboard' %}class="active"{% endif %}>
-                    <a href="{% url 'passenger_dashboard' %}">
-                        <i class="ri-home-line"></i>
-                        <span>Akèy</span>
-                    </a>
-                </li>
-                <li {% if request.resolver_match.url_name == 'passenger_tracking' %}class="active"{% endif %}>
-                    <a href="{% url 'passenger_tracking' %}">
-                        <i class="ri-map-pin-line"></i>
-                        <span>Tracking</span>
-                    </a>
-                </li>
-                <li {% if request.resolver_match.url_name == 'passenger_history' %}class="active"{% endif %}>
-                    <a href="{% url 'passenger_history' %}">
-                        <i class="ri-history-line"></i>
-                        <span>Istorik</span>
-                    </a>
-                </li>
-                <li {% if request.resolver_match.url_name == 'passenger_schedules' %}class="active"{% endif %}>
-                    <a href="{% url 'passenger_schedules' %}">
-                        <i class="ri-time-line"></i>
-                        <span>Orè</span>
-                    </a>
-                </li>
-            </ul>
-        </nav>
-    </aside>
+    <!-- Container des notifications -->
+    <div id="notification-container" class="notification-container hidden"></div>
 
+    <!-- Contenu principal -->
     <main class="main-content">
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="footer">
-        <p>&copy; {% now "Y" %} LIMAJS MOTORS S.A. Tout dwa rezève.</p>
-    </footer>
+    <!-- Navigation bottom -->
+    <nav class="glass-nav">
+        <a href="{% url 'passenger_tracking' %}" class="nav-item {% if request.resolver_match.url_name == 'passenger_tracking' %}active{% endif %}">
+            <i class="fas fa-map-marker-alt"></i>
+            <span>Tracking</span>
+        </a>
+        <a href="{% url 'passenger_schedules' %}" class="nav-item {% if request.resolver_match.url_name == 'passenger_schedules' %}active{% endif %}">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Horaires</span>
+        </a>
+        <a href="{% url 'passenger_dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'passenger_dashboard' %}active{% endif %}">
+            <i class="fas fa-home"></i>
+            <span>Accueil</span>
+        </a>
+        <a href="{% url 'passenger_history' %}" class="nav-item {% if request.resolver_match.url_name == 'passenger_history' %}active{% endif %}">
+            <i class="fas fa-history"></i>
+            <span>Historique</span>
+        </a>
+    </nav>
 
+    <!-- Scripts communs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+    <script src="{% static 'js/notifications.js' %}"></script>
+
+    <!-- Scripts spécifiques à la page -->
     {% block extra_js %}{% endblock %}
+
     <script>
-        // Toggle sidebar on mobile
-        document.querySelector('.sidebar-toggle').addEventListener('click', function() {
-            document.querySelector('.sidebar').classList.toggle('show');
-        });
-
-        // Toggle notifications menu
-        document.querySelector('.notifications-trigger').addEventListener('click', function(e) {
-            e.stopPropagation();
-            document.querySelector('.notifications-menu').classList.toggle('show');
-        });
-
-        // Close notifications menu when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.notifications-dropdown')) {
-                document.querySelector('.notifications-menu').classList.remove('show');
-            }
-        });
+        // Message Flash Django
+        {% if messages %}
+            {% for message in messages %}
+                alert("{{ message }}");
+            {% endfor %}
+        {% endif %}
     </script>
 </body>
 </html>

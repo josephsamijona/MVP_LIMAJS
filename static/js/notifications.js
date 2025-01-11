@@ -1,204 +1,173 @@
-// static/js/notifications.js
+class NotificationManager {
+    constructor() {
+        // Sélection des éléments DOM
+        this.notificationButton = document.getElementById('notifications');
+        this.notificationCounter = document.querySelector('.notification-badge');
+        this.notificationContainer = document.getElementById('notification-container');
+        
+        // Récupération du token CSRF
+        this.csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        // État des notifications
+        this.unreadNotifications = [];
+        this.isNotificationOpen = false;
+        
+        // Initialisation
+        this.init();
+    }
 
-// Fonction pour obtenir le token CSRF
-function getCSRFToken() {
-    return document.querySelector('[name=csrfmiddlewaretoken]').value;
- }
- 
- // Configuration par défaut pour fetch avec CSRF token
- const fetchConfig = {
-    headers: {
-        'X-CSRFToken': getCSRFToken(),
-        'Content-Type': 'application/json',
-    },
-    credentials: 'same-origin'  // Pour inclure les cookies
- };
- 
- // Initialisation au chargement du DOM
- document.addEventListener('DOMContentLoaded', function() {
-    initializeNotifications();
-    checkSubscriptionStatus();
-    // Vérifier toutes les 5 minutes
-    setInterval(checkSubscriptionStatus, 300000);
-    // Vérifier les notifications toutes les 30 secondes
-    setInterval(updateNotifications, 30000);
- });
- 
- // Initialisation des notifications
- function initializeNotifications() {
-    const notifTrigger = document.querySelector('.notifications-trigger');
-    const notifMenu = document.querySelector('.notifications-menu');
- 
-    if (notifTrigger && notifMenu) {
-        // Toggle du menu notifications
-        notifTrigger.addEventListener('click', () => {
-            notifMenu.classList.toggle('show');
-            if (notifMenu.classList.contains('show')) {
-                updateNotifications();
-            }
-        });
- 
-        // Fermer le menu si clic en dehors
-        document.addEventListener('click', (e) => {
-            if (!notifTrigger.contains(e.target) && !notifMenu.contains(e.target)) {
-                notifMenu.classList.remove('show');
-            }
-        });
+    async init() {
+        // Ajouter les écouteurs d'événements
+        this.notificationButton.addEventListener('click', () => this.toggleNotifications());
+        
+        // Première récupération des notifications
+        await this.fetchNotifications();
+        
+        // Mettre en place la vérification périodique
+        setInterval(() => this.fetchNotifications(), 30000); // Toutes les 30 secondes
     }
- }
- 
- // Mise à jour des notifications
- async function updateNotifications() {
-    try {
-        const response = await fetch('/api/notifications/unread/', {
-            ...fetchConfig,
-            method: 'GET'
-        });
-        
-        if (response.status === 401) {
-            window.location.href = '/login/';
-            return;
-        }
- 
-        const data = await response.json();
-        const notifContent = document.querySelector('.notifications-content');
-        const notifBadge = document.querySelector('.notification-badge');
-        
-        if (notifContent) {
-            if (data.notifications.length > 0) {
-                notifContent.innerHTML = data.notifications.map(notif => `
-                    <div class="notification-item unread" data-id="${notif.id}">
-                        <i class="ri-information-line"></i>
-                        <div class="notification-details">
-                            <p>${notif.message}</p>
-                            <small>${notif.created_at}</small>
-                        </div>
-                        <button class="mark-read-btn" onclick="markAsRead(${notif.id})">
-                            <i class="ri-check-line"></i>
-                        </button>
-                    </div>
-                `).join('');
- 
-                // Mettre à jour le badge
-                if (notifBadge) {
-                    notifBadge.textContent = data.notifications.length;
-                    notifBadge.classList.remove('hidden');
+
+    async fetchNotifications() {
+        try {
+            const response = await fetch('/api/notifications/unread/', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
                 }
-            } else {
-                notifContent.innerHTML = `
-                    <div class="no-notifications">
-                        <p>Pa gen notifikasyon</p>
-                    </div>
-                `;
-                notifBadge?.classList.add('hidden');
+            });
+
+            if (!response.ok) throw new Error('Erreur lors de la récupération des notifications');
+
+            const data = await response.json();
+            this.unreadNotifications = data.notifications;
+            this.updateNotificationBadge();
+            
+            if (this.isNotificationOpen) {
+                this.renderNotifications();
             }
+        } catch (error) {
+            console.error('Erreur:', error);
         }
-    } catch (error) {
-        console.error('Erreur lors de la mise à jour des notifications:', error);
     }
- }
- 
- // Marquer une notification comme lue
- async function markAsRead(notificationId) {
-    try {
-        const response = await fetch(`/api/notifications/${notificationId}/read/`, {
-            ...fetchConfig,
-            method: 'POST'
-        });
- 
-        if (response.status === 401) {
-            window.location.href = '/login/';
+
+    updateNotificationBadge() {
+        const count = this.unreadNotifications.length;
+        if (count > 0) {
+            this.notificationCounter.textContent = count > 99 ? '99+' : count;
+            this.notificationCounter.classList.remove('hidden');
+        } else {
+            this.notificationCounter.classList.add('hidden');
+        }
+    }
+
+    toggleNotifications() {
+        this.isNotificationOpen = !this.isNotificationOpen;
+        if (this.isNotificationOpen) {
+            this.renderNotifications();
+        } else {
+            this.notificationContainer.classList.add('hidden');
+        }
+    }
+
+    renderNotifications() {
+        this.notificationContainer.classList.remove('hidden');
+        
+        if (this.unreadNotifications.length === 0) {
+            this.notificationContainer.innerHTML = `
+                <div class="glass-card notification-empty">
+                    <p>Pas de nouvelles notifications</p>
+                </div>`;
             return;
         }
- 
-        if (response.ok) {
-            const notifItem = document.querySelector(`[data-id="${notificationId}"]`);
-            if (notifItem) {
-                notifItem.classList.add('fade-out');
-                setTimeout(() => {
-                    notifItem.remove();
-                    updateNotifications();
-                }, 300);
+
+        const notificationsHTML = this.unreadNotifications.map(notification => {
+            let typeClass = '';
+            // Définir la classe CSS selon le type de notification
+            switch(notification.type) {
+                case 'SUB_7_DAYS':
+                case 'SUB_3_DAYS':
+                case 'SUB_1_DAY':
+                case 'SUB_TODAY':
+                case 'SUB_EXPIRED':
+                    typeClass = 'notification-subscription';
+                    break;
+                case 'BUS_DELAY':
+                case 'BUS_ARRIVAL':
+                    typeClass = 'notification-bus';
+                    break;
+                default:
+                    typeClass = 'notification-system';
             }
+
+            return `
+                <div class="glass-card notification-item ${typeClass}" data-id="${notification.id}">
+                    <p class="notification-message">${notification.message}</p>
+                    <small class="notification-time">${this.formatNotificationTime(notification.created_at)}</small>
+                    <button class="btn-mark-read" onclick="notificationManager.markAsRead(${notification.id})">
+                        Marquer comme lu
+                    </button>
+                </div>`;
+        }).join('');
+
+        this.notificationContainer.innerHTML = notificationsHTML;
+    }
+
+    async markAsRead(notificationId) {
+        try {
+            const response = await fetch(`/api/notifications/${notificationId}/read/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': this.csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) throw new Error('Erreur lors du marquage de la notification');
+
+            // Mise à jour locale des notifications
+            this.unreadNotifications = this.unreadNotifications.filter(
+                notif => notif.id !== notificationId
+            );
+            
+            // Mettre à jour l'affichage
+            this.updateNotificationBadge();
+            this.renderNotifications();
+        } catch (error) {
+            console.error('Erreur:', error);
         }
-    } catch (error) {
-        console.error('Erreur lors du marquage de la notification:', error);
     }
- }
- 
- // Vérification du statut de l'abonnement
- async function checkSubscriptionStatus() {
-    try {
-        const response = await fetch('/api/subscription/status/', {
-            ...fetchConfig,
-            method: 'GET'
-        });
- 
-        if (response.status === 401) {
-            window.location.href = '/login/';
-            return;
+
+    formatNotificationTime(timestamp) {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diff = now - date;
+
+        // Moins d'une heure
+        if (diff < 3600000) {
+            const minutes = Math.floor(diff / 60000);
+            return `Il y a ${minutes} minute${minutes > 1 ? 's' : ''}`;
         }
- 
-        const data = await response.json();
-        if (data) {
-            updateSubscriptionUI(data);
+        // Moins d'un jour
+        else if (diff < 86400000) {
+            const hours = Math.floor(diff / 3600000);
+            return `Il y a ${hours} heure${hours > 1 ? 's' : ''}`;
         }
-    } catch (error) {
-        console.error('Erreur lors de la vérification de l\'abonnement:', error);
+        // Plus d'un jour
+        else {
+            return date.toLocaleDateString('fr-FR', {
+                day: 'numeric',
+                month: 'short',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
     }
- }
- 
- // Mise à jour de l'interface utilisateur pour l'abonnement
- function updateSubscriptionUI(data) {
-    const subsCard = document.querySelector('.subscription-status');
-    if (!subsCard) return;
- 
-    let statusClass = '';
-    let icon = '';
-    let message = '';
- 
-    switch(data.status) {
-        case 'expired':
-            statusClass = 'status-expired';
-            icon = 'ri-error-warning-line';
-            message = 'Abònman w ekspire';
-            break;
-        case 'active':
-            if (data.days_remaining <= 1) {
-                statusClass = 'status-critical';
-                icon = 'ri-timer-flash-line';
-                message = `Abònman w ap ekspire nan ${data.days_remaining} jou`;
-            } else if (data.days_remaining <= 3) {
-                statusClass = 'status-warning';
-                icon = 'ri-alarm-warning-line';
-                message = `Abònman w ap ekspire nan ${data.days_remaining} jou`;
-            } else if (data.days_remaining <= 7) {
-                statusClass = 'status-notice';
-                icon = 'ri-notification-line';
-                message = `Abònman w ap ekspire nan ${data.days_remaining} jou`;
-            } else {
-                statusClass = 'status-good';
-                icon = 'ri-checkbox-circle-line';
-                message = 'Abònman w valid';
-            }
-            break;
-        default:
-            statusClass = 'status-expired';
-            icon = 'ri-error-warning-line';
-            message = 'Ou pa gen abònman aktif';
-    }
- 
-    subsCard.className = `subscription-status ${statusClass}`;
-    subsCard.innerHTML = `
-        <i class="${icon}"></i>
-        <p>${message}</p>
-        ${data.end_date ? `<p class="subscription-details">Dat ekspirasyon: ${data.end_date}</p>` : ''}
-    `;
- }
- 
- // Gestionnaire d'erreur global pour les requêtes fetch
- window.addEventListener('unhandledrejection', function(event) {
-    if (event.reason && event.reason.status === 401) {
-        window.location.href = '/login/';
-    }
- });
+}
+
+// Initialisation quand le DOM est chargé
+document.addEventListener('DOMContentLoaded', () => {
+    window.notificationManager = new NotificationManager();
+});

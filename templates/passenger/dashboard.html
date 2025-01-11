@@ -1,243 +1,180 @@
 {% extends 'base.html' %}
-{% load static %}
 
-{% block title %}Tableau de Bord - LIMAJS MOTORS{% endblock %}
+{% block title %}Accueil - LIMAJS MOTORS S.A{% endblock %}
 
 {% block content %}
-{% csrf_token %}
-<div class="dashboard-container fade-in">
+<div class="content-container">
     <!-- Section Abonnement -->
-    <section class="card subscription-card">
-        <div class="card-header">
-            <h2>Abònman</h2>
-        </div>
-        <div class="subscription-status {% if subscription_status %}status-{{ subscription_status }}{% else %}status-expired{% endif %}">
-            <i class="ri-error-warning-line"></i>
-            {% if subscription %}
-                <p class="subscription-message">
+    <div class="glass-card subscription-card {% if subscription_status %}status-{{ subscription_status }}{% endif %} mb-4">
+        <h2 class="text-xl font-bold mb-3">Mon Abonnement</h2>
+        {% if subscription %}
+            <div class="subscription-info">
+                <div class="status-indicator">
                     {% if subscription_status == 'expired' %}
-                        Abònman w ekspire
+                        <span class="status-dot bg-red-500"></span>
+                        <span class="status-text text-red-500">Expiré</span>
                     {% elif subscription_status == 'critical' %}
-                        Abònman w ap ekspire nan {{ days_remaining }} jou
+                        <span class="status-dot bg-red-400"></span>
+                        <span class="status-text text-red-400">Expire aujourd'hui</span>
                     {% elif subscription_status == 'warning' %}
-                        Abònman w ap ekspire nan {{ days_remaining }} jou
+                        <span class="status-dot bg-orange-400"></span>
+                        <span class="status-text text-orange-400">Expire dans {{ days_remaining }} jours</span>
                     {% elif subscription_status == 'notice' %}
-                        Abònman w ap ekspire nan {{ days_remaining }} jou
+                        <span class="status-dot bg-yellow-400"></span>
+                        <span class="status-text text-yellow-400">Expire bientôt</span>
                     {% else %}
-                        Abònman w valid
+                        <span class="status-dot bg-green-500"></span>
+                        <span class="status-text text-green-500">Actif</span>
                     {% endif %}
-                </p>
-                <p class="subscription-details">
-                    Dat ekspirasyon: {{ subscription.end_date|date:"d/m/Y" }}
-                </p>
-            {% else %}
-                <p>Ou pa gen abònman aktif</p>
-            {% endif %}
-        </div>
-    </section>
+                </div>
+                <div class="subscription-details mt-3">
+                    <p><strong>Type:</strong> {{ subscription.get_subscription_type_display }}</p>
+                    <p><strong>Expire le:</strong> {{ subscription.end_date|date:"d F Y" }}</p>
+                    <p><strong>Jours restants:</strong> {{ days_remaining }} jours</p>
+                </div>
+            </div>
+        {% else %}
+            <div class="subscription-empty">
+                <p class="text-red-500">Aucun abonnement actif</p>
+                <a href="#" class="btn mt-3">Souscrire un abonnement</a>
+            </div>
+        {% endif %}
+    </div>
 
-    <!-- Section Derniers Voyages -->
-    <section class="card recent-travels-card">
-        <div class="card-header">
-            <h2>Dènye Vwayaj yo</h2>
-        </div>
-        <div class="card-content">
-            {% if recent_travels %}
-                <div class="travels-list">
-                    {% for travel in recent_travels %}
-                        <div class="travel-item">
-                            <div class="travel-icon">
-                                <i class="ri-bus-line"></i>
-                            </div>
-                            <div class="travel-details">
-                                <span class="travel-time">{{ travel.scan_timestamp|date:"H:i" }}</span>
-                                <p class="travel-date">{{ travel.scan_timestamp|date:"d/m/Y" }}</p>
-                                <p class="travel-info">Chofè: {{ travel.driver.get_full_name }}</p>
-                            </div>
-                            {% if travel.schedule %}
-                                <div class="travel-schedule">
-                                    <p>{{ travel.schedule.route_name }}</p>
-                                </div>
-                            {% endif %}
+    <!-- Section Voyages Récents -->
+    <div class="glass-card mb-4">
+        <h2 class="text-xl font-bold mb-3">Derniers Voyages</h2>
+        {% if recent_travels %}
+            <div class="recent-travels">
+                {% for travel in recent_travels %}
+                    <div class="travel-item {% if not forloop.last %}mb-3 pb-3 border-b border-gray-200{% endif %}">
+                        <div class="travel-header flex justify-between items-center">
+                            <span class="font-medium">{{ travel.schedule.route.name }}</span>
+                            <span class="text-sm text-gray-500">{{ travel.scan_timestamp|date:"H:i" }}</span>
                         </div>
-                    {% endfor %}
-                </div>
-                <div class="card-footer">
-                    <a href="{% url 'passenger_history' %}" class="btn btn-primary">
-                        <i class="ri-history-line"></i>
-                        Wè tout istwa
-                    </a>
-                </div>
-            {% else %}
-                <div class="no-data">
-                    <i class="ri-information-line"></i>
-                    <p>Pa gen vwayaj pou lemoman</p>
-                </div>
-            {% endif %}
-        </div>
-    </section>
+                        <div class="travel-details text-sm text-gray-600 mt-1">
+                            <p>Chauffeur: {{ travel.driver.get_full_name }}</p>
+                            <p>Date: {{ travel.scan_timestamp|date:"d/m/Y" }}</p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-gray-500">Aucun voyage récent</p>
+        {% endif %}
+    </div>
 
-    <!-- Section Horaires du Jour -->
-    <section class="card schedules-card">
-        <div class="card-header">
-            <h2>Orè Jodi a</h2>
-        </div>
-        <div class="card-content">
-            {% if today_schedules %}
-                <div class="schedules-list">
-                    {% for schedule in today_schedules %}
-                        <div class="schedule-item">
-                            <div class="schedule-time">
-                                <i class="ri-time-line"></i>
-                                <span>{{ schedule.departure_time|time:"H:i" }}</span>
-                            </div>
-                            <div class="schedule-details">
-                                {% if schedule.route %}
-                                    <p>{{ schedule.route.name }}</p>
-                                {% endif %}
-                                {% if schedule.stop %}
-                                    <small>{{ schedule.stop.name }}</small>
-                                {% endif %}
-                            </div>
+    <!-- Section Prochains Départs -->
+    <div class="glass-card mb-4">
+        <h2 class="text-xl font-bold mb-3">Prochains Départs Aujourd'hui</h2>
+        {% if today_schedules %}
+            <div class="today-schedules">
+                {% for schedule in today_schedules %}
+                    <div class="schedule-item {% if not forloop.last %}mb-3 pb-3 border-b border-gray-200{% endif %}">
+                        <div class="schedule-header flex justify-between items-center">
+                            <span class="font-medium">{{ schedule.route.name }}</span>
+                            <span class="schedule-time text-sm bg-primary text-white px-2 py-1 rounded">
+                                {{ schedule.departure_time|time:"H:i" }}
+                            </span>
                         </div>
-                    {% endfor %}
-                </div>
-                <div class="card-footer">
-                    <a href="{% url 'passenger_schedules' %}" class="btn btn-primary">
-                        <i class="ri-calendar-line"></i>
-                        Wè tout orè yo
-                    </a>
-                </div>
-            {% else %}
-                <div class="no-data">
-                    <i class="ri-information-line"></i>
-                    <p>Pa gen orè disponib pou jodi a</p>
-                </div>
-            {% endif %}
-        </div>
-    </section>
+                        <div class="schedule-details text-sm text-gray-600 mt-1">
+                            <p>Arrêt: {{ schedule.stop.name }}</p>
+                            <p>Arrivée prévue: {{ schedule.arrival_time|time:"H:i" }}</p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-gray-500">Aucun départ prévu aujourd'hui</p>
+        {% endif %}
+    </div>
 
-    <!-- Section Bus Actifs -->
-    <section class="card active-buses-card">
-        <div class="card-header">
-            <h2>Bus an Sèvis</h2>
+    <!-- Section Bus en Service -->
+    {% if active_buses %}
+    <div class="glass-card">
+        <h2 class="text-xl font-bold mb-3">Bus en Service</h2>
+        <div class="active-buses grid grid-cols-2 gap-3">
+            {% for bus in active_buses %}
+                <div class="bus-item p-3 bg-white rounded-md shadow-sm">
+                    <div class="flex items-center">
+                        <i class="fas fa-bus text-primary mr-2"></i>
+                        <span class="font-medium">{{ bus.driver.get_full_name }}</span>
+                    </div>
+                    <div class="text-sm text-gray-600 mt-1">
+                        <p>Dernière mise à jour: {{ bus.timestamp|time:"H:i" }}</p>
+                    </div>
+                </div>
+            {% endfor %}
         </div>
-        <div class="card-content">
-            {% if active_buses %}
-                <div class="buses-list">
-                    {% for bus in active_buses %}
-                        <div class="bus-item">
-                            <div class="bus-icon">
-                                <i class="ri-bus-2-line"></i>
-                            </div>
-                            <div class="bus-details">
-                                <p class="driver-name">{{ bus.driver.get_full_name }}</p>
-                                <small class="last-update">
-                                    Dènye mizajou: {{ bus.timestamp|time:"H:i" }}
-                                </small>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-                <div class="card-footer">
-                    <a href="{% url 'passenger_tracking' %}" class="btn btn-primary">
-                        <i class="ri-map-pin-line"></i>
-                        Swiv bus yo
-                    </a>
-                </div>
-            {% else %}
-                <div class="no-data">
-                    <i class="ri-information-line"></i>
-                    <p>Pa gen bus an sèvis pou lemoman</p>
-                </div>
-            {% endif %}
-        </div>
-    </section>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
 
 {% block extra_css %}
 <style>
-    .dashboard-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: var(--space-lg);
-        padding: var(--space-lg);
-        margin-top: 70px;
-    }
+/* Status Indicator */
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
 
-    .card {
-        background: var(--white);
-        border-radius: var(--radius-lg);
-        overflow: hidden;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
 
-    .card:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-lg);
-    }
+.subscription-card {
+    position: relative;
+    overflow: hidden;
+}
 
-    .card-header {
-        padding: var(--space-md);
-        border-bottom: 1px solid var(--gray-200);
-    }
+.subscription-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 4px;
+    height: 100%;
+}
 
-    .card-header h2 {
-        margin: 0;
-        font-size: 1.25rem;
-        color: var(--gray-800);
-    }
+.status-expired::before {
+    background-color: #EF4444;
+}
 
-    .card-content {
-        padding: var(--space-md);
-    }
+.status-critical::before {
+    background-color: #F87171;
+}
 
-    .card-footer {
-        padding: var(--space-md);
-        border-top: 1px solid var(--gray-200);
-        text-align: center;
-    }
+.status-warning::before {
+    background-color: #FB923C;
+}
 
-    /* Styles spécifiques aux sections */
-    .subscription-status {
-        padding: var(--space-lg);
-        text-align: center;
-        border-radius: var(--radius-md);
-    }
+.status-notice::before {
+    background-color: #FBBF24;
+}
 
-    .travel-item, .schedule-item, .bus-item {
-        display: flex;
-        align-items: center;
-        padding: var(--space-md);
-        border-bottom: 1px solid var(--gray-200);
-        transition: background-color 0.2s ease;
-    }
+.status-good::before {
+    background-color: #22C55E;
+}
 
-    .travel-item:hover, .schedule-item:hover, .bus-item:hover {
-        background-color: var(--gray-50);
-    }
+.travel-item, .schedule-item {
+    transition: transform 0.2s ease;
+}
 
-    .no-data {
-        text-align: center;
-        padding: var(--space-xl);
-        color: var(--gray-500);
-    }
+.travel-item:hover, .schedule-item:hover {
+    transform: translateX(5px);
+}
 
-    .no-data i {
-        font-size: 2rem;
-        margin-bottom: var(--space-sm);
-    }
+.bus-item {
+    transition: all 0.3s ease;
+}
 
-    /* Responsive */
-    @media (max-width: 768px) {
-        .dashboard-container {
-            grid-template-columns: 1fr;
-        }
-    }
+.bus-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
 </style>
-{% endblock %}
-
-{% block extra_js %}
-<script src="{% static 'js/notifications.js' %}"></script>
 {% endblock %}

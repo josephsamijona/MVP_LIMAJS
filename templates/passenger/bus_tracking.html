@@ -1,247 +1,220 @@
 {% extends 'base.html' %}
-{% load static %}
 
-{% block title %}Tracking Bus - LIMAJS MOTORS{% endblock %}
-
-{% block extra_css %}
-<!-- Leaflet CSS -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<style>
-    .tracking-container {
-        margin-top: 70px;
-        padding: var(--space-lg);
-        height: calc(100vh - 70px);
-        display: grid;
-        grid-template-columns: 300px 1fr;
-        gap: var(--space-lg);
-    }
-
-    #map {
-        height: 100%;
-        border-radius: var(--radius-lg);
-        box-shadow: var(--shadow-md);
-    }
-
-    .tracking-sidebar {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-md);
-    }
-
-    .tracking-status {
-        padding: var(--space-md);
-        background: var(--white);
-        border-radius: var(--radius-lg);
-        box-shadow: var(--shadow-md);
-    }
-
-    .bus-list {
-        flex: 1;
-        background: var(--white);
-        border-radius: var(--radius-lg);
-        box-shadow: var(--shadow-md);
-        overflow-y: auto;
-    }
-
-    .bus-item {
-        padding: var(--space-md);
-        border-bottom: 1px solid var(--gray-200);
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-    }
-
-    .bus-item:hover {
-        background-color: var(--gray-100);
-    }
-
-    .bus-item.active {
-        background-color: var(--primary);
-        color: var(--white);
-    }
-
-    .tracking-closed {
-        height: calc(100vh - 70px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        padding: var(--space-lg);
-    }
-
-    .last-update {
-        font-size: 0.875rem;
-        color: var(--gray-500);
-    }
-
-    @media (max-width: 768px) {
-        .tracking-container {
-            grid-template-columns: 1fr;
-            height: auto;
-        }
-
-        #map {
-            height: 60vh;
-        }
-
-        .tracking-sidebar {
-            height: auto;
-        }
-    }
-</style>
-{% endblock %}
+{% block title %}Tracking - LIMAJS MOTORS S.A{% endblock %}
 
 {% block content %}
-{% csrf_token %}
-
-{% if not tracking_available %}
-    <div class="tracking-closed">
-        <div class="card">
-            <i class="ri-time-line" style="font-size: 3rem; color: var(--gray-500);"></i>
-            <h2>Tracking non disponib</h2>
-            <p>Tracking disponib sèlman pandan lè sèvis:</p>
-            <p>Maten: 5:00 - 12:00</p>
-            <p>Aprè midi: 12:00 - 19:00</p>
+<div class="tracking-container">
+    <!-- Status Bar -->
+    <div class="tracking-status glass-card">
+        <div class="status-info">
+            <div class="period-indicator">
+                <i class="fas {% if period == 'morning' %}fa-sun text-yellow-500{% elif period == 'afternoon' %}fa-cloud-sun text-orange-500{% else %}fa-moon text-blue-900{% endif %}"></i>
+                <span>
+                    {% if period == 'morning' %}
+                        Service Matinal
+                    {% elif period == 'afternoon' %}
+                        Service Après-midi
+                    {% else %}
+                        Service Fermé
+                    {% endif %}
+                </span>
+            </div>
+            <div class="service-hours">
+                {% if tracking_available %}
+                    <span class="text-sm">{{ tracking_period.start }} - {{ tracking_period.end }}</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="connection-status">
+            <i class="fas fa-circle" id="connection-indicator"></i>
+            <span id="connection-status">Chargement...</span>
         </div>
     </div>
-{% else %}
-    <div class="tracking-container">
-        <div class="tracking-sidebar">
-            <!-- Status du tracking -->
-            <div class="tracking-status">
-                <h3>Tracking Status</h3>
-                <p>Peryòd: 
-                    {% if period == 'morning' %}
-                        Maten
-                    {% else %}
-                        Aprè midi
-                    {% endif %}
-                </p>
-                <p>{{ tracking_period.start }} - {{ tracking_period.end }}</p>
-                <p class="last-update" id="lastUpdate">
-                    Dènye mizajou: {{ current_time|time:"H:i:s" }}
-                </p>
-            </div>
 
-            <!-- Liste des bus -->
-            <div class="bus-list" id="busList">
-                {% for bus in bus_locations %}
-                    <div class="bus-item" data-driver-id="{{ bus.driver.id }}">
-                        <h4>{{ bus.driver.get_full_name }}</h4>
-                        <p class="last-update">
-                            Dènye pozisyon: {{ bus.timestamp|time:"H:i:s" }}
-                        </p>
-                    </div>
-                {% empty %}
-                    <div class="no-buses">
-                        <p>Pa gen bus ki an sèvis pou lemoman</p>
+    <!-- Map Container -->
+    {% if tracking_available %}
+        <div id="map" class="map-container"></div>
+        
+        <!-- Bus List -->
+        <div class="bus-list glass-card">
+            <h3 class="text-lg font-semibold mb-3">Bus en Service</h3>
+            <div id="active-buses">
+                {% for schedule in active_schedules %}
+                    <div class="bus-item" data-driver-id="{{ schedule.driver.id }}">
+                        <div class="bus-info">
+                            <i class="fas fa-bus text-primary"></i>
+                            <span class="driver-name">{{ schedule.driver.get_full_name }}</span>
+                        </div>
+                        <div class="bus-details">
+                            <span class="schedule-time">{{ schedule.departure_time|time:"H:i" }}</span>
+                        </div>
                     </div>
                 {% endfor %}
             </div>
         </div>
+    {% else %}
+        <div class="service-closed glass-card">
+            <i class="fas fa-moon text-4xl mb-3"></i>
+            <h2 class="text-xl font-bold mb-2">Service Fermé</h2>
+            <p class="text-gray-600">Le service de tracking est disponible uniquement pendant les heures de service :</p>
+            <ul class="mt-2 text-gray-600">
+                <li>Matin: 05:00 - 12:00</li>
+                <li>Après-midi: 12:00 - 19:00</li>
+            </ul>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
 
-        <!-- Carte -->
-        <div id="map"></div>
-    </div>
-{% endif %}
+{% block extra_css %}
+<style>
+.tracking-container {
+    padding-top: 60px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.tracking-status {
+    position: fixed;
+    top: 60px;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    margin: 1rem;
+    padding: 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.status-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.period-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+}
+
+.connection-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+}
+
+#connection-indicator {
+    font-size: 0.75rem;
+}
+
+#connection-indicator.connected {
+    color: #22C55E;
+}
+
+#connection-indicator.disconnected {
+    color: #EF4444;
+}
+
+.map-container {
+    flex: 1;
+    position: relative;
+    z-index: 1;
+    margin: 5rem 1rem 1rem 1rem;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.bus-list {
+    position: fixed;
+    bottom: 5rem;
+    left: 1rem;
+    right: 1rem;
+    max-height: 30vh;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.bus-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--glass-border);
+    transition: background-color 0.3s ease;
+}
+
+.bus-item:last-child {
+    border-bottom: none;
+}
+
+.bus-item.active {
+    background-color: rgba(255, 107, 0, 0.1);
+}
+
+.bus-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.bus-details {
+    font-size: 0.875rem;
+    color: var(--text-light);
+}
+
+.service-closed {
+    margin: 2rem 1rem;
+    text-align: center;
+    padding: 2rem;
+}
+
+/* Bus marker popup styles */
+.bus-popup {
+    padding: 0.5rem;
+}
+
+.bus-popup h3 {
+    color: var(--primary);
+    margin-bottom: 0.25rem;
+}
+
+.bus-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+}
+
+.bus-marker i {
+    font-size: 1.5rem;
+    color: var(--primary);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+/* Trajectory styles */
+.bus-trajectory {
+    stroke: var(--primary);
+    stroke-width: 3;
+    stroke-opacity: 0.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+@media (min-width: 768px) {
+    .bus-list {
+        left: auto;
+        right: 1rem;
+        width: 300px;
+    }
+}
+</style>
 {% endblock %}
 
 {% block extra_js %}
-<!-- Leaflet JS -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    {% if tracking_available %}
-        // Initialisation de la carte
-        const map = L.map('map').setView([18.5333, -72.3333], 13); // Coordonnées de Port-au-Prince
-
-        // Ajout de la couche OpenStreetMap
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
-
-        // Stockage des marqueurs et des trajectoires
-        let busMarkers = {};
-        let busTrajectories = {};
-
-        // Fonction pour mettre à jour la carte
-        function updateMap(locations) {
-            // Mise à jour des marqueurs
-            locations.forEach(location => {
-                const markerId = `driver-${location.driver_id}`;
-                
-                if (!busMarkers[markerId]) {
-                    // Créer un nouveau marqueur
-                    busMarkers[markerId] = L.marker([location.latitude, location.longitude])
-                        .bindPopup(`Chofè: ${location.driver_name}`).addTo(map);
-                } else {
-                    // Mettre à jour la position
-                    busMarkers[markerId].setLatLng([location.latitude, location.longitude]);
-                }
-
-                // Mettre à jour la trajectoire
-                if (location.positions && location.positions.length > 0) {
-                    const coordinates = location.positions.map(pos => [pos.latitude, pos.longitude]);
-                    
-                    if (busTrajectories[markerId]) {
-                        map.removeLayer(busTrajectories[markerId]);
-                    }
-                    
-                    busTrajectories[markerId] = L.polyline(coordinates, {
-                        color: '#2563eb',
-                        weight: 3,
-                        opacity: 0.6
-                    }).addTo(map);
-                }
-            });
-        }
-
-        // Fonction pour mettre à jour la liste des bus
-        function updateBusList(locations) {
-            const busList = document.getElementById('busList');
-            const lastUpdate = document.getElementById('lastUpdate');
-            
-            if (locations.length > 0) {
-                busList.innerHTML = locations.map(location => `
-                    <div class="bus-item" data-driver-id="${location.driver_id}">
-                        <h4>${location.driver_name}</h4>
-                        <p class="last-update">Dènye pozisyon: ${location.timestamp}</p>
-                    </div>
-                `).join('');
-
-                lastUpdate.textContent = `Dènye mizajou: ${locations[0].timestamp}`;
-            }
-        }
-
-        // Fonction pour récupérer les mises à jour
-        async function fetchUpdates() {
-            try {
-                const response = await fetch('/api/bus/locations/', {
-                    headers: {
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                    },
-                    credentials: 'same-origin'
-                });
-
-                const data = await response.json();
-
-                if (data.tracking_available && data.locations) {
-                    updateMap(data.locations);
-                    updateBusList(data.locations);
-                }
-            } catch (error) {
-                console.error('Erreur lors de la mise à jour:', error);
-            }
-        }
-
-        // Initialisation avec les données existantes
-        {% if bus_trajectories %}
-            updateMap({{ bus_trajectories|safe }});
-        {% endif %}
-
-        // Mise à jour toutes les 10 secondes
-        setInterval(fetchUpdates, 10000);
-    {% endif %}
-});
-</script>
+<script src="{% static 'js/map.js' %}"></script>
 {% endblock %}
