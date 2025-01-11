@@ -28,10 +28,10 @@ urlpatterns = [
     path('passenger/tracking/', views.BusTrackingView.as_view(), name='passenger_tracking'),
     
     # URLs pour les API (mises à jour en temps réel et filtres)
-    path('api/schedules/', views.get_route_schedule, name='api_route_schedules'),
-    path('api/history/filter/', views.filter_travel_history, name='api_travel_history'),
-    path('api/bus/locations/', views.get_real_time_bus_locations, name='api_bus_locations'),
-    path('api/notifications/unread/', views.get_unread_notifications, name='api_unread_notifications'),
-    path('api/notifications/<int:notification_id>/read/', views.mark_notification_as_read, name='api_read_notification'),
+    path('schedules/', views.get_route_schedule, name='api_route_schedules'),
+    path('history/filter/', views.filter_travel_history, name='api_travel_history'),
+    path('bus/locations/', views.get_real_time_bus_locations, name='api_bus_locations'),
+    path('notifications/unread/', views.get_unread_notifications, name='api_unread_notifications'),
+    path('notifications/<int:notification_id>/read/', views.mark_notification_as_read, name='api_read_notification'),
     path('', include(router.urls)),
 ]

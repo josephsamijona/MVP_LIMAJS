@@ -1,4 +1,3 @@
-
 {% extends 'base.html' %}
 
 {% block title %}Tracking - LIMAJS MOTORS S.A{% endblock %}
@@ -40,15 +39,21 @@
         <div class="bus-list glass-card">
             <h3 class="text-lg font-semibold mb-3">Bus en Service</h3>
             <div id="active-buses">
-                {% for schedule in active_schedules %}
-                    <div class="bus-item" data-driver-id="{{ schedule.driver.id }}">
+                {% for driver_id, trajectory in bus_trajectories.items %}
+                    {% with latest_position=trajectory|first %}
+                    <div class="bus-item" data-driver-id="{{ latest_position.driver_id }}">
                         <div class="bus-info">
                             <i class="fas fa-bus text-primary"></i>
-                            <span class="driver-name">{{ schedule.driver.get_full_name }}</span>
+                            <span class="driver-name">{{ latest_position.driver_name }}</span>
                         </div>
                         <div class="bus-details">
-                            <span class="schedule-time">{{ schedule.departure_time|time:"H:i" }}</span>
+                            <span class="last-update">Mise à jour: {{ latest_position.timestamp }}</span>
                         </div>
+                    </div>
+                    {% endwith %}
+                {% empty %}
+                    <div class="text-center text-gray-500 py-4">
+                        Aucun bus en service actuellement
                     </div>
                 {% endfor %}
             </div>
@@ -218,5 +223,4 @@
 
 {% block extra_js %}
 <script src="{% static 'js/map.js' %}"></script>
-
 {% endblock %}

@@ -166,11 +166,10 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = "America/Port-au-Prince"
 
 USE_I18N = True
-
-USE_TZ = True
+USE_TZ = True 
 
 
 # Static files (CSS, JavaScript, Images)
@@ -225,7 +224,8 @@ CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = TIME_ZONE
+CELERY_TIMEZONE = "America/Port-au-Prince"  # Même timezone que Django
+CELERY_ENABLE_UTC = True  # Active la gestion UTC pour Celery
 
 AUTHENTICATION_BACKENDS = (
     
@@ -244,6 +244,9 @@ REST_FRAMEWORK = {
     ),
 
 }
+
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 AUTH_USER_MODEL = 'app.User'  # Remplacez 'app' par le nom de votre application
 # Configuration WhiteNoise pour servir les fichiers statiques en production
