@@ -1,274 +1,253 @@
 {% extends 'base.html' %}
-{% load static %}
 
-{% block title %}Orè Bus - LIMAJS MOTORS{% endblock %}
+{% block title %}Horaires - LIMAJS MOTORS S.A{% endblock %}
 
 {% block content %}
-{% csrf_token %}
-<div class="schedules-container">
-   <!-- En-tête de la page -->
-   <div class="schedules-header">
-       <h1>Orè {{ current_day }}</h1>
-       <div class="period-badges">
-           <div class="period-badge {% if current_period == 'morning' %}active{% endif %}">
-               <i class="ri-sun-line"></i>
-               <span>Maten</span>
-               <small>{{ morning_range }}</small>
-           </div>
-           <div class="period-badge {% if current_period == 'afternoon' %}active{% endif %}">
-               <i class="ri-sun-foggy-line"></i>
-               <span>Aprè Midi</span>
-               <small>{{ afternoon_range }}</small>
-           </div>
-       </div>
-   </div>
+<div class="content-container">
+    <!-- En-tête avec la date -->
+    <div class="glass-card mb-4">
+        <div class="schedule-header">
+            <h1 class="text-xl font-bold">Horaires du {{ current_day }}</h1>
+            <div class="period-badge {% if current_period == 'morning' %}bg-yellow-500{% elif current_period == 'afternoon' %}bg-orange-500{% else %}bg-gray-500{% endif %}">
+                {% if current_period == 'morning' %}
+                    <i class="fas fa-sun"></i> Service Matinal
+                {% elif current_period == 'afternoon' %}
+                    <i class="fas fa-cloud-sun"></i> Service Après-midi
+                {% else %}
+                    <i class="fas fa-moon"></i> Service Fermé
+                {% endif %}
+            </div>
+        </div>
+    </div>
 
-   <!-- Section Matin -->
-   <div class="schedule-section card">
-       <div class="section-header">
-           <h2><i class="ri-sun-line"></i> Orè Maten</h2>
-           <span class="time-range">{{ morning_range }}</span>
-       </div>
-       {% if morning_schedules %}
-       <div class="schedules-grid">
-           {% for schedule in morning_schedules %}
-           <div class="schedule-card {% if schedule.departure_time|time <= current_time|time %}passed{% endif %}">
-               <div class="time-badge">{{ schedule.departure_time|time:"H:i" }}</div>
-               <div class="schedule-info">
-                   <h3>{{ schedule.route.name }}</h3>
-                   <p class="stop-name">{{ schedule.stop.name }}</p>
-                   <p class="arrival-time">
-                       <i class="ri-time-line"></i>
-                       Rive: {{ schedule.arrival_time|time:"H:i" }}
-                   </p>
-               </div>
-           </div>
-           {% endfor %}
-       </div>
-       {% else %}
-       <div class="no-schedules">
-           <i class="ri-information-line"></i>
-           <p>Pa gen orè disponib pou maten an</p>
-       </div>
-       {% endif %}
-   </div>
+    <!-- Horaires du Matin -->
+    <div class="glass-card mb-4 {% if current_period == 'morning' %}active-period{% endif %}">
+        <div class="period-header">
+            <h2 class="text-lg font-semibold">
+                <i class="fas fa-sun text-yellow-500"></i>
+                Service Matinal
+            </h2>
+            <span class="text-sm text-gray-600">{{ morning_range }}</span>
+        </div>
 
-   <!-- Section Après-midi -->
-   <div class="schedule-section card">
-       <div class="section-header">
-           <h2><i class="ri-sun-foggy-line"></i> Orè Aprè Midi</h2>
-           <span class="time-range">{{ afternoon_range }}</span>
-       </div>
-       {% if afternoon_schedules %}
-       <div class="schedules-grid">
-           {% for schedule in afternoon_schedules %}
-           <div class="schedule-card {% if schedule.departure_time|time <= current_time|time %}passed{% endif %}">
-               <div class="time-badge">{{ schedule.departure_time|time:"H:i" }}</div>
-               <div class="schedule-info">
-                   <h3>{{ schedule.route.name }}</h3>
-                   <p class="stop-name">{{ schedule.stop.name }}</p>
-                   <p class="arrival-time">
-                       <i class="ri-time-line"></i>
-                       Rive: {{ schedule.arrival_time|time:"H:i" }}
-                   </p>
-               </div>
-           </div>
-           {% endfor %}
-       </div>
-       {% else %}
-       <div class="no-schedules">
-           <i class="ri-information-line"></i>
-           <p>Pa gen orè disponib pou aprè midi a</p>
-       </div>
-       {% endif %}
-   </div>
+        {% if morning_schedules %}
+            {% regroup morning_schedules by route as route_schedules %}
+            
+            <div class="schedule-accordion">
+                {% for route in route_schedules %}
+                    <div class="route-group">
+                        <div class="route-header" onclick="toggleRoute(this)">
+                            <div class="route-info">
+                                <i class="fas fa-chevron-right route-arrow"></i>
+                                <span class="font-medium">{{ route.grouper.name }}</span>
+                            </div>
+                            <span class="schedule-count">{{ route.list|length }} départs</span>
+                        </div>
+                        <div class="route-schedules hidden">
+                            {% for schedule in route.list %}
+                                <div class="schedule-row">
+                                    <div class="time-info">
+                                        <span class="departure-time">{{ schedule.departure_time|time:"H:i" }}</span>
+                                        <i class="fas fa-long-arrow-alt-right text-gray-400 mx-2"></i>
+                                        <span class="arrival-time">{{ schedule.arrival_time|time:"H:i" }}</span>
+                                    </div>
+                                    <div class="stop-info">
+                                        <i class="fas fa-map-marker-alt text-primary"></i>
+                                        <span>{{ schedule.stop.name }}</span>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-gray-500 mt-3">Aucun horaire disponible pour le matin</p>
+        {% endif %}
+    </div>
+
+    <!-- Horaires de l'Après-midi -->
+    <div class="glass-card {% if current_period == 'afternoon' %}active-period{% endif %}">
+        <div class="period-header">
+            <h2 class="text-lg font-semibold">
+                <i class="fas fa-cloud-sun text-orange-500"></i>
+                Service Après-midi
+            </h2>
+            <span class="text-sm text-gray-600">{{ afternoon_range }}</span>
+        </div>
+
+        {% if afternoon_schedules %}
+            {% regroup afternoon_schedules by route as route_schedules %}
+            
+            <div class="schedule-accordion">
+                {% for route in route_schedules %}
+                    <div class="route-group">
+                        <div class="route-header" onclick="toggleRoute(this)">
+                            <div class="route-info">
+                                <i class="fas fa-chevron-right route-arrow"></i>
+                                <span class="font-medium">{{ route.grouper.name }}</span>
+                            </div>
+                            <span class="schedule-count">{{ route.list|length }} départs</span>
+                        </div>
+                        <div class="route-schedules hidden">
+                            {% for schedule in route.list %}
+                                <div class="schedule-row">
+                                    <div class="time-info">
+                                        <span class="departure-time">{{ schedule.departure_time|time:"H:i" }}</span>
+                                        <i class="fas fa-long-arrow-alt-right text-gray-400 mx-2"></i>
+                                        <span class="arrival-time">{{ schedule.arrival_time|time:"H:i" }}</span>
+                                    </div>
+                                    <div class="stop-info">
+                                        <i class="fas fa-map-marker-alt text-primary"></i>
+                                        <span>{{ schedule.stop.name }}</span>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-gray-500 mt-3">Aucun horaire disponible pour l'après-midi</p>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}
 
 {% block extra_css %}
 <style>
-.schedules-container {
-   padding: var(--space-lg);
-   margin-top: 70px;
-}
-
-.schedules-header {
-   margin-bottom: var(--space-xl);
-   text-align: center;
-}
-
-.period-badges {
-   display: flex;
-   justify-content: center;
-   gap: var(--space-md);
-   margin-top: var(--space-md);
+.schedule-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .period-badge {
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   padding: var(--space-md);
-   border-radius: var(--radius-lg);
-   background: var(--white);
-   box-shadow: var(--shadow-sm);
-   min-width: 150px;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-sm);
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
 }
 
-.period-badge.active {
-   background: var(--primary);
-   color: var(--white);
+.period-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--glass-border);
 }
 
-.period-badge i {
-   font-size: 1.5rem;
-   margin-bottom: var(--space-xs);
+.active-period {
+    border: 2px solid var(--primary);
 }
 
-.period-badge small {
-   margin-top: var(--space-xs);
-   opacity: 0.8;
+.schedule-accordion {
+    margin-top: 1rem;
 }
 
-.schedule-section {
-   margin-bottom: var(--space-xl);
+.route-group {
+    border-bottom: 1px solid var(--glass-border);
 }
 
-.section-header {
-   display: flex;
-   justify-content: space-between;
-   align-items: center;
-   padding: var(--space-md);
-   border-bottom: 1px solid var(--gray-200);
+.route-group:last-child {
+    border-bottom: none;
 }
 
-.schedules-grid {
-   display: grid;
-   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-   gap: var(--space-md);
-   padding: var(--space-md);
+.route-header {
+    padding: 1rem 0;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
 }
 
-.schedule-card {
-   position: relative;
-   background: var(--white);
-   border-radius: var(--radius-md);
-   padding: var(--space-md);
-   box-shadow: var(--shadow-sm);
-   transition: transform 0.2s ease;
+.route-header:hover {
+    color: var(--primary);
 }
 
-.schedule-card:hover {
-   transform: translateY(-2px);
-   box-shadow: var(--shadow-md);
+.route-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
 }
 
-.schedule-card.passed {
-   opacity: 0.6;
+.route-arrow {
+    transition: transform 0.3s ease;
+    font-size: 0.875rem;
 }
 
-.time-badge {
-   position: absolute;
-   top: -10px;
-   right: 10px;
-   background: var(--primary);
-   color: var(--white);
-   padding: var(--space-xs) var(--space-sm);
-   border-radius: var(--radius-md);
-   font-weight: 600;
+.route-header.active .route-arrow {
+    transform: rotate(90deg);
 }
 
-.schedule-info h3 {
-   margin-bottom: var(--space-xs);
-   color: var(--gray-800);
+.schedule-count {
+    font-size: 0.875rem;
+    color: var(--text-light);
+    background: rgba(0, 0, 0, 0.05);
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-sm);
 }
 
-.stop-name {
-   color: var(--gray-600);
-   margin-bottom: var(--space-xs);
+.route-schedules {
+    padding: 0 0 1rem 2rem;
 }
 
-.arrival-time {
-   display: flex;
-   align-items: center;
-   gap: var(--space-xs);
-   color: var(--gray-500);
-   font-size: 0.9rem;
+.schedule-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    transition: transform 0.2s ease;
 }
 
-.no-schedules {
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   padding: var(--space-xl);
-   color: var(--gray-500);
+.schedule-row:hover {
+    transform: translateX(5px);
 }
 
-.no-schedules i {
-   font-size: 2rem;
-   margin-bottom: var(--space-sm);
+.time-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
-@media (max-width: 768px) {
-   .schedules-container {
-       padding: var(--space-md);
-   }
+.departure-time, .arrival-time {
+    font-family: monospace;
+    font-size: 0.9rem;
+}
 
-   .period-badges {
-       flex-direction: column;
-       align-items: center;
-   }
+.stop-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-light);
+    font-size: 0.875rem;
+}
 
-   .period-badge {
-       width: 100%;
-       max-width: 300px;
-   }
-
-   .schedules-grid {
-       grid-template-columns: 1fr;
-   }
+.hidden {
+    display: none;
 }
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-   // Mettre à jour les horaires en temps réel
-   async function updateSchedules() {
-       try {
-           const response = await fetch('/api/schedules/', {
-               headers: {
-                   'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-               },
-               credentials: 'same-origin'
-           });
-
-           const data = await response.json();
-           // Mettre à jour l'interface si nécessaire
-           updateScheduleCards(data.schedules);
-       } catch (error) {
-           console.error('Erreur lors de la mise à jour des horaires:', error);
-       }
-   }
-
-   // Mettre à jour les cartes d'horaires
-   function updateScheduleCards(schedules) {
-       const currentTime = new Date();
-       document.querySelectorAll('.schedule-card').forEach(card => {
-           const timeStr = card.querySelector('.time-badge').textContent;
-           const [hours, minutes] = timeStr.split(':').map(Number);
-           const scheduleTime = new Date();
-           scheduleTime.setHours(hours, minutes);
-
-           if (scheduleTime < currentTime) {
-               card.classList.add('passed');
-           }
-       });
-   }
-
-   // Mettre à jour toutes les minutes
-   setInterval(updateSchedules, 60000);
-});
+function toggleRoute(element) {
+    const schedules = element.nextElementSibling;
+    const arrow = element.querySelector('.route-arrow');
+    
+    element.classList.toggle('active');
+    schedules.classList.toggle('hidden');
+    
+    // Animate arrow
+    if (element.classList.contains('active')) {
+        arrow.style.transform = 'rotate(90deg)';
+    } else {
+        arrow.style.transform = 'rotate(0)';
+    }
+}
 </script>
 {% endblock %}

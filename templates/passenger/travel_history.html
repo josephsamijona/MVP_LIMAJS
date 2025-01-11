@@ -1,357 +1,316 @@
 {% extends 'base.html' %}
-{% load static %}
 
-{% block title %}Istorik Vwayaj - LIMAJS MOTORS{% endblock %}
+{% block title %}Historique - LIMAJS MOTORS S.A{% endblock %}
 
 {% block content %}
-{% csrf_token %}
-<div class="history-container">
-   <!-- En-tête avec statistiques -->
-   <div class="stats-grid">
-       <div class="stat-card">
-           <div class="stat-icon">
-               <i class="ri-bus-line"></i>
-           </div>
-           <div class="stat-content">
-               <h3>Total Vwayaj</h3>
-               <p class="stat-value">{{ total_travels }}</p>
-           </div>
-       </div>
-       <div class="stat-card">
-           <div class="stat-icon">
-               <i class="ri-calendar-check-line"></i>
-           </div>
-           <div class="stat-content">
-               <h3>Vwayaj Semèn nan</h3>
-               <p class="stat-value">{{ last_week_travels }}</p>
-           </div>
-       </div>
-       <div class="stat-card">
-           <div class="stat-icon">
-               <i class="ri-calendar-event-line"></i>
-           </div>
-           <div class="stat-content">
-               <h3>Vwayaj Mwa a</h3>
-               <p class="stat-value">{{ current_month_travels }}</p>
-           </div>
-       </div>
-   </div>
+<div class="content-container">
+    <!-- Statistiques -->
+    <div class="stats-grid">
+        <div class="glass-card stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-calendar text-primary"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-value">{{ current_month_travels }}</span>
+                <span class="stat-label">Ce mois</span>
+            </div>
+        </div>
 
-   <!-- Filtres -->
-   <div class="filters-section card">
-       <div class="filter-buttons">
-           {% for option in filter_options %}
-           <button class="filter-btn {% if current_filter == option.value %}active{% endif %}" 
-                   data-period="{{ option.value }}">
-               {{ option.label }}
-           </button>
-           {% endfor %}
-       </div>
-       
-       <div class="date-filters">
-           <div class="date-input">
-               <label for="start_date">Dat Kòmansman</label>
-               <input type="date" id="start_date" name="start_date">
-           </div>
-           <div class="date-input">
-               <label for="end_date">Dat Fen</label>
-               <input type="date" id="end_date" name="end_date">
-           </div>
-           <button class="btn btn-primary" id="apply-filter">
-               <i class="ri-filter-line"></i> Filtre
-           </button>
-       </div>
-   </div>
+        <div class="glass-card stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-clock text-primary"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-value">{{ last_week_travels }}</span>
+                <span class="stat-label">7 derniers jours</span>
+            </div>
+        </div>
 
-   <!-- Liste des voyages -->
-   <div class="travels-list card">
-       {% if travels %}
-           <div class="travels-grid">
-               {% for travel in travels %}
-               <div class="travel-card">
-                   <div class="travel-header">
-                       <span class="travel-date">{{ travel.scan_timestamp|date:"d/m/Y" }}</span>
-                       <span class="travel-time">{{ travel.scan_timestamp|time:"H:i" }}</span>
-                   </div>
-                   <div class="travel-details">
-                       {% if travel.schedule %}
-                           <p class="route-info">{{ travel.schedule.route_name }}</p>
-                       {% endif %}
-                       <p class="driver-info">
-                           <i class="ri-user-line"></i>
-                           {{ travel.driver.get_full_name }}
-                       </p>
-                       {% if travel.latitude and travel.longitude %}
-                           <a href="#" class="view-location" 
-                              data-lat="{{ travel.latitude }}" 
-                              data-lng="{{ travel.longitude }}">
-                               <i class="ri-map-pin-line"></i> Wè sou kat la
-                           </a>
-                       {% endif %}
-                   </div>
-               </div>
-               {% endfor %}
-           </div>
+        <div class="glass-card stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-bus text-primary"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-value">{{ total_travels }}</span>
+                <span class="stat-label">Total</span>
+            </div>
+        </div>
+    </div>
 
-           <!-- Pagination -->
-           {% if is_paginated %}
-           <div class="pagination">
-               {% if page_obj.has_previous %}
-                   <a href="?page=1" class="pagination-btn">&laquo; Premye</a>
-                   <a href="?page={{ page_obj.previous_page_number }}" class="pagination-btn">Anvan</a>
-               {% endif %}
+    <!-- Filtres -->
+    <div class="glass-card filter-section mb-4">
+        <div class="filter-buttons">
+            {% for option in filter_options %}
+            <button 
+                class="filter-btn {% if current_filter == option.value %}active{% endif %}"
+                onclick="applyFilter('{{ option.value }}')"
+            >
+                {{ option.label }}
+            </button>
+            {% endfor %}
+        </div>
+    </div>
 
-               <span class="current-page">
-                   Paj {{ page_obj.number }} sou {{ page_obj.paginator.num_pages }}
-               </span>
+    <!-- Liste des voyages -->
+    <div class="glass-card">
+        <h2 class="text-xl font-bold mb-4">Historique des Voyages</h2>
+        
+        {% if travels %}
+            <div class="travels-list">
+                {% for travel in travels %}
+                    <div class="travel-item">
+                        <div class="travel-header">
+                            <div class="travel-route">
+                                <i class="fas fa-route text-primary"></i>
+                                <span class="font-medium">{{ travel.schedule.route.name }}</span>
+                            </div>
+                            <span class="travel-date">
+                                {{ travel.scan_timestamp|date:"d/m/Y" }}
+                            </span>
+                        </div>
+                        
+                        <div class="travel-details">
+                            <div class="detail-item">
+                                <i class="fas fa-clock text-gray-500"></i>
+                                <span>{{ travel.scan_timestamp|time:"H:i" }}</span>
+                            </div>
+                            
+                            <div class="detail-item">
+                                <i class="fas fa-user text-gray-500"></i>
+                                <span>{{ travel.driver.get_full_name }}</span>
+                            </div>
+                            
+                            {% if travel.stop %}
+                            <div class="detail-item">
+                                <i class="fas fa-map-marker-alt text-gray-500"></i>
+                                <span>{{ travel.stop.name }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
 
-               {% if page_obj.has_next %}
-                   <a href="?page={{ page_obj.next_page_number }}" class="pagination-btn">Apre</a>
-                   <a href="?page={{ page_obj.paginator.num_pages }}" class="pagination-btn">Dènye &raquo;</a>
-               {% endif %}
-           </div>
-           {% endif %}
-       {% else %}
-           <div class="no-travels">
-               <i class="ri-information-line"></i>
-               <p>Ou poko fè okenn vwayaj</p>
-           </div>
-       {% endif %}
-   </div>
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <div class="pagination">
+                <div class="pagination-info">
+                    Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}
+                </div>
+                
+                <div class="pagination-controls">
+                    {% if page_obj.has_previous %}
+                        <a href="?page=1{% if current_filter %}&period={{ current_filter }}{% endif %}" 
+                           class="pagination-btn">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                        <a href="?page={{ page_obj.previous_page_number }}{% if current_filter %}&period={{ current_filter }}{% endif %}" 
+                           class="pagination-btn">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    {% endif %}
+
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}{% if current_filter %}&period={{ current_filter }}{% endif %}" 
+                           class="pagination-btn">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                        <a href="?page={{ page_obj.paginator.num_pages }}{% if current_filter %}&period={{ current_filter }}{% endif %}" 
+                           class="pagination-btn">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-route text-gray-400 text-4xl mb-3"></i>
+                <p class="text-gray-500">Aucun voyage trouvé pour cette période</p>
+            </div>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}
 
 {% block extra_css %}
 <style>
-.history-container {
-   padding: var(--space-lg);
-   margin-top: 70px;
-}
-
+/* Stats Grid */
 .stats-grid {
-   display: grid;
-   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-   gap: var(--space-md);
-   margin-bottom: var(--space-lg);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
 }
 
 .stat-card {
-   background: var(--white);
-   border-radius: var(--radius-lg);
-   padding: var(--space-lg);
-   box-shadow: var(--shadow-sm);
-   display: flex;
-   align-items: center;
-   gap: var(--space-md);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
 }
 
 .stat-icon {
-   font-size: 2rem;
-   color: var(--primary);
-   background: var(--gray-100);
-   padding: var(--space-md);
-   border-radius: 50%;
+    font-size: 1.5rem;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 107, 0, 0.1);
+    border-radius: var(--radius-sm);
+}
+
+.stat-content {
+    display: flex;
+    flex-direction: column;
 }
 
 .stat-value {
-   font-size: 1.5rem;
-   font-weight: 600;
-   color: var(--gray-900);
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1;
 }
 
-.filters-section {
-   margin-bottom: var(--space-lg);
-   padding: var(--space-lg);
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--text-light);
+}
+
+/* Filters */
+.filter-section {
+    padding: 0.75rem;
 }
 
 .filter-buttons {
-   display: flex;
-   gap: var(--space-sm);
-   margin-bottom: var(--space-md);
-   flex-wrap: wrap;
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
 }
 
 .filter-btn {
-   padding: var(--space-sm) var(--space-md);
-   border: 1px solid var(--gray-200);
-   border-radius: var(--radius-md);
-   background: var(--white);
-   cursor: pointer;
-   transition: all 0.2s ease;
+    white-space: nowrap;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    background: var(--white);
+    color: var(--text);
+    transition: all 0.3s ease;
+}
+
+.filter-btn:hover {
+    border-color: var(--primary);
 }
 
 .filter-btn.active {
-   background: var(--primary);
-   color: var(--white);
-   border-color: var(--primary);
+    background: var(--primary);
+    color: var(--white);
+    border-color: var(--primary);
 }
 
-.date-filters {
-   display: flex;
-   gap: var(--space-md);
-   align-items: flex-end;
-   flex-wrap: wrap;
+/* Travel Items */
+.travels-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
-.date-input {
-   display: flex;
-   flex-direction: column;
-   gap: var(--space-xs);
+.travel-item {
+    padding: 1rem;
+    background: var(--white);
+    border-radius: var(--radius-sm);
+    transition: transform 0.2s ease;
 }
 
-.travels-grid {
-   display: grid;
-   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-   gap: var(--space-md);
-   padding: var(--space-md);
-}
-
-.travel-card {
-   background: var(--white);
-   border-radius: var(--radius-md);
-   padding: var(--space-md);
-   box-shadow: var(--shadow-sm);
-   transition: transform 0.2s ease;
-}
-
-.travel-card:hover {
-   transform: translateY(-2px);
-   box-shadow: var(--shadow-md);
+.travel-item:hover {
+    transform: translateY(-2px);
 }
 
 .travel-header {
-   display: flex;
-   justify-content: space-between;
-   margin-bottom: var(--space-sm);
-   padding-bottom: var(--space-sm);
-   border-bottom: 1px solid var(--gray-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
 }
 
-.travel-time {
-   color: var(--primary);
-   font-weight: 500;
+.travel-route {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.travel-date {
+    font-size: 0.875rem;
+    color: var(--text-light);
 }
 
 .travel-details {
-   display: flex;
-   flex-direction: column;
-   gap: var(--space-xs);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
 }
 
+.detail-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-light);
+}
+
+/* Pagination */
 .pagination {
-   display: flex;
-   justify-content: center;
-   gap: var(--space-sm);
-   padding: var(--space-lg);
-   align-items: center;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--glass-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pagination-info {
+    font-size: 0.875rem;
+    color: var(--text-light);
+}
+
+.pagination-controls {
+    display: flex;
+    gap: 0.5rem;
 }
 
 .pagination-btn {
-   padding: var(--space-xs) var(--space-sm);
-   border: 1px solid var(--gray-200);
-   border-radius: var(--radius-sm);
-   text-decoration: none;
-   color: var(--gray-700);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    transition: all 0.3s ease;
 }
 
-.current-page {
-   padding: var(--space-xs) var(--space-sm);
-   background: var(--gray-100);
-   border-radius: var(--radius-sm);
+.pagination-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
 }
 
-@media (max-width: 768px) {
-   .history-container {
-       padding: var(--space-md);
-   }
-
-   .date-filters {
-       flex-direction: column;
-   }
-
-   .date-input {
-       width: 100%;
-   }
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
 }
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-   const filterButtons = document.querySelectorAll('.filter-btn');
-   const startDate = document.getElementById('start_date');
-   const endDate = document.getElementById('end_date');
-   const applyFilter = document.getElementById('apply-filter');
-
-   // Gestion des filtres rapides
-   filterButtons.forEach(button => {
-       button.addEventListener('click', () => {
-           const period = button.dataset.period;
-           window.location.href = `?period=${period}`;
-       });
-   });
-
-   // Gestion du filtre par date
-   applyFilter.addEventListener('click', async () => {
-       if (!startDate.value || !endDate.value) {
-           alert('Tanpri, chwazi dat yo');
-           return;
-       }
-
-       try {
-           const response = await fetch(`/api/history/filter/?start_date=${startDate.value}&end_date=${endDate.value}`, {
-               headers: {
-                   'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-               },
-               credentials: 'same-origin'
-           });
-
-           const data = await response.json();
-           if (data.status === 'success') {
-               updateTravelsList(data.data);
-           }
-       } catch (error) {
-           console.error('Erreur:', error);
-       }
-   });
-
-   function updateTravelsList(travels) {
-       const travelsList = document.querySelector('.travels-grid');
-       if (!travelsList) return;
-
-       if (travels.length === 0) {
-           travelsList.innerHTML = `
-               <div class="no-travels">
-                   <i class="ri-information-line"></i>
-                   <p>Pa gen vwayaj pou peryòd sa a</p>
-               </div>
-           `;
-           return;
-       }
-
-       travelsList.innerHTML = travels.map(travel => `
-           <div class="travel-card">
-               <div class="travel-header">
-                   <span class="travel-date">${travel.date.split(' ')[0]}</span>
-                   <span class="travel-time">${travel.date.split(' ')[1]}</span>
-               </div>
-               <div class="travel-details">
-                   <p class="driver-info">
-                       <i class="ri-user-line"></i>
-                       ${travel.driver}
-                   </p>
-                   ${travel.latitude && travel.longitude ? `
-                       <a href="#" class="view-location" 
-                          data-lat="${travel.latitude}" 
-                          data-lng="${travel.longitude}">
-                           <i class="ri-map-pin-line"></i> Wè sou kat la
-                       </a>
-                   ` : ''}
-               </div>
-           </div>
-       `).join('');
-   }
-});
+function applyFilter(period) {
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set('period', period);
+    currentUrl.searchParams.delete('page'); // Reset page when changing filter
+    window.location.href = currentUrl.toString();
+}
 </script>
 {% endblock %}
