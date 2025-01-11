@@ -1,0 +1,57 @@
+/* Styles généraux */
+body {
+    margin: 0;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+    background: radial-gradient(circle at center, #000428, #004e92);
+    color: white;
+}
+
+/* Conteneur de la galaxie */
+canvas {
+    display: block;
+}
+
+/* Carte avec effet verre */
+.glass {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    height: 400px;
+    backdrop-filter: blur(20px) saturate(180%);
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+/* Effet de brillance sur le logo */
+.glass img {
+    width: 100px;
+    filter: drop-shadow(0 0 15px #FF8C00);
+    animation: pulse 3s infinite;
+}
+
+/* Style du texte */
+.glass h1 {
+    font-size: 1.5rem;
+    margin: 20px 0;
+    color: #ffffff;
+}
+
+/* Animation du pulse */
+@keyframes pulse {
+    0%, 100% {
+        filter: drop-shadow(0 0 15px #FF8C00);
+    }
+    50% {
+        filter: drop-shadow(0 0 30px #FF8C00);
+    }
+}
